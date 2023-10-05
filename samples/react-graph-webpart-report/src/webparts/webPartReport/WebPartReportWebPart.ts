@@ -12,6 +12,7 @@ import WebPartReport from './components/WebPartReport';
 import { IWebPartReportProps } from './components/IWebPartReportProps';
 import { ITopActions, TopActionsFieldType } from '@microsoft/sp-top-actions';
 import {GraphService} from "./../GraphService"
+import { _extractWebParts } from './../WebPartData';
 
 export interface IWebPartReportWebPartProps {
   description: string;
@@ -116,8 +117,23 @@ export default class WebPartReportWebPart extends BaseClientSideWebPart<IWebPart
             }
           }]
         }
-      }],
+      },
+      {
+        targetProperty: 'extractButton',
+        type:TopActionsFieldType.Button,
+        title: 'Extract data',
+        properties: {
+          text: 'Extract',
+          icon: 'Download'
+        }
+      }
+
+    ],
       onExecute: (actionName, newValue) =>{
+        if(actionName == 'extractButton'){
+          const service: GraphService = new GraphService(this.context);
+          _extractWebParts(service, this.context.pageContext.site.id.toString());
+        }
         this.properties.displayOption = newValue;
         this.render();
       }

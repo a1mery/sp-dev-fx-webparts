@@ -1,5 +1,5 @@
 import { MSGraphClientV3 } from "@microsoft/sp-http";
-import { GraphSitePage, GraphSitePageCollection, GraphWebPartCollection } from "./types";
+import { GraphSitePage, GraphSitePageCollection, GraphWebPartCollection, WebPart } from "./types";
 import { BaseComponentContext } from "@microsoft/sp-component-base";
 
 export interface IGraphService {
@@ -44,6 +44,11 @@ export class GraphService implements IGraphService {
       )
     });
     return pages;
+  }
+
+  public async ExtractWebParts (siteWebParts: WebPart[],siteId: string): Promise<void> {
+    const client = await this.Get_Client();
+    let webpartsJSON = '{"WebParts":[{';
   }
 }
 

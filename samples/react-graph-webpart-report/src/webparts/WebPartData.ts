@@ -28,3 +28,8 @@ export async function _getSiteWebParts(service: IGraphService, siteId: string): 
         return null;
     }
 }
+
+export async function _extractWebParts(service: IGraphService, siteId: string): Promise<void> {
+    const siteWebParts = await _getSiteWebParts(service, siteId);
+    
+}
