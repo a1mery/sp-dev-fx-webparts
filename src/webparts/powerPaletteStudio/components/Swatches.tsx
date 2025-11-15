@@ -6,9 +6,12 @@ import {
   Text,
 } from "@fluentui/react-components"
 import * as React from "react"
+import { ColorPicker } from "./ColorPicker"
+import { IColor } from "../models/IColors"
 
 export interface SwatchesProps {
   colors: { color: string; value: string; "aria-label": string }[]
+  setColors: React.Dispatch<React.SetStateAction<IColor[]>>
 }
 
 const useStyles = makeStyles({
@@ -16,6 +19,7 @@ const useStyles = makeStyles({
     display: "flex",
     gap: "1.5rem",
     flexWrap: "wrap",
+    paddingTop: "1rem",
   },
   swatchContainer: {
     display: "grid",
@@ -23,18 +27,21 @@ const useStyles = makeStyles({
     rowGap: "4px",
   },
   customSwatch: {
-    width: "120px",
-    height: "120px",
+    width: "96px",
+    height: "96px",
+    cursor: "pointer",
   },
 })
 
-export const Swatches: React.FC<SwatchesProps> = ({ colors }) => {
-  const [selectedValue, setSelectedValue] = React.useState<string | undefined>(
-    undefined
-  )
-
-  const handleSelect: SwatchPickerOnSelectEventHandler = (_, data) => {
-    setSelectedValue(data.selectedValue)
+export const Swatches: React.FC<SwatchesProps> = ({ colors, setColors }) => {
+  const handleColorChange = (index: number, newColor: string) => {
+    setColors((prevColors) =>
+      prevColors.map((color, i) =>
+        i === index
+          ? { ...color, color: newColor, value: newColor.replace("#", "") }
+          : color
+      )
+    )
   }
 
   const styles = useStyles()
@@ -42,21 +49,24 @@ export const Swatches: React.FC<SwatchesProps> = ({ colors }) => {
   return (
     <SwatchPicker
       aria-label='SwatchPicker row layout'
-      selectedValue={selectedValue}
-      onSelectionChange={handleSelect}
       shape='circular'
       size='large'
       spacing='medium'
       className={styles.swatchPicker}
     >
-      {colors.map((color) => {
+      {colors.map((color, index) => {
         return (
           <section className={styles.swatchContainer} key={color.value}>
-            <ColorSwatch
-              key={color.value}
-              {...color}
-              className={styles.customSwatch}
-            />
+            <ColorPicker
+              color={color.color}
+              onColorChange={(newColor) => handleColorChange(index, newColor)}
+            >
+              <ColorSwatch
+                key={color.value}
+                {...color}
+                className={styles.customSwatch}
+              />
+            </ColorPicker>
             <Text weight='semibold'>{color["aria-label"]}</Text>
             <Text size={100}>{color.color}</Text>
           </section>

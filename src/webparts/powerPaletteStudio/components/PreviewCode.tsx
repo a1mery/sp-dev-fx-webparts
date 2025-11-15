@@ -39,6 +39,9 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
   },
+  dialogSurface: {
+    borderTop: `4px solid ${tokens.colorBrandForeground1}`,
+  },
 })
 
 export const PreviewCode: React.FC<PreviewCodeProps> = ({
@@ -62,7 +65,7 @@ export const PreviewCode: React.FC<PreviewCodeProps> = ({
         open={isOpen}
         onOpenChange={(event, data) => setIsOpen(data.open)}
       >
-        <DialogSurface>
+        <DialogSurface className={styles.dialogSurface}>
           <DialogBody>
             <DialogTitle
               action={

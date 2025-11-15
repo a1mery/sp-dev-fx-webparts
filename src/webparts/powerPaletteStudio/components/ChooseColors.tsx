@@ -5,7 +5,8 @@ import {
   CardFooter,
   CardHeader,
   makeStyles,
-  Subtitle2,
+  Subtitle1,
+  tokens,
 } from "@fluentui/react-components"
 import { Swatches } from "./Swatches"
 import {
@@ -21,8 +22,8 @@ import { defaultColors, IColor } from "../models/IColors"
 
 const useStyles = makeStyles({
   card: {
-    padding: "2rem",
-    boxSizing: "border-box",
+    padding: "1.6rem",
+    borderTop: `4px solid ${tokens.colorBrandForeground1}`,
   },
   actions: {
     display: "flex",
@@ -43,6 +44,7 @@ export const ChooseColors: React.FC = () => {
 
   const handleGenerateColors = () => {
     const newColors = generateColors()
+    console.log("Generated colors:", newColors)
     setColors(newColors)
   }
 
@@ -57,8 +59,8 @@ export const ChooseColors: React.FC = () => {
   return (
     <>
       <Card className={styles.card}>
-        <CardHeader header={<Subtitle2>COLOR PALETTE</Subtitle2>} />
-        <Swatches colors={colors} />
+        <CardHeader header={<Subtitle1>COLOR PALETTE</Subtitle1>} />
+        <Swatches colors={colors} setColors={setColors} />
         <CardFooter
           className={styles.cardFooter}
           action={
