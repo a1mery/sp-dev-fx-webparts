@@ -23,8 +23,9 @@ export const Header: React.FC = () => {
     <header className={styles.header}>
       <Title2 className={styles.gradientTitle}>Power Palette Studio</Title2>
       <Text>
-        Generate beautiful, harmonious color palettes instantly. Click any color
-        to copy, toggle between HEX and RGB formats.
+        Generate stunning color palettes with AI-powered intelligence. Click any
+        color to copy, compare desktop and mobile previews, or export your
+        palette as code.
       </Text>
     </header>
   )
