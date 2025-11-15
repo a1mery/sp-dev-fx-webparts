@@ -29,6 +29,31 @@ export const generateColors = (): IColor[] => {
   const baseSaturation = 60 + Math.floor(Math.random() * 20) // 60-80%
   const baseLightness = 45 + Math.floor(Math.random() * 15) // 45-60%
 
+  // Pre-calculate semantic colors to ensure consistency
+  const successHex = hslToHex(
+    140 + Math.random() * 20 - 10,
+    65 + Math.random() * 15,
+    40 + Math.random() * 10
+  )
+
+  const warningHex = hslToHex(
+    35 + Math.random() * 20 - 10,
+    85 + Math.random() * 10,
+    50 + Math.random() * 10
+  )
+
+  const errorHex = hslToHex(
+    5 + Math.random() * 15 - 7,
+    70 + Math.random() * 15,
+    50 + Math.random() * 10
+  )
+
+  const infoHex = hslToHex(
+    210 + Math.random() * 20 - 10,
+    75 + Math.random() * 15,
+    45 + Math.random() * 10
+  )
+
   return [
     {
       color: `#${hslToHex(baseHue, baseSaturation, baseLightness)}`,
@@ -50,55 +75,23 @@ export const generateColors = (): IColor[] => {
       "aria-label": "Accent",
     },
     {
-      color: `#${hslToHex(
-        140 + Math.random() * 20 - 10,
-        65 + Math.random() * 15,
-        40 + Math.random() * 10
-      )}`,
-      value: hslToHex(
-        140 + Math.random() * 20 - 10,
-        65 + Math.random() * 15,
-        40 + Math.random() * 10
-      ),
+      color: `#${successHex}`,
+      value: successHex,
       "aria-label": "Success",
     },
     {
-      color: `#${hslToHex(
-        35 + Math.random() * 20 - 10,
-        85 + Math.random() * 10,
-        50 + Math.random() * 10
-      )}`,
-      value: hslToHex(
-        35 + Math.random() * 20 - 10,
-        85 + Math.random() * 10,
-        50 + Math.random() * 10
-      ),
+      color: `#${warningHex}`,
+      value: warningHex,
       "aria-label": "Warning",
     },
     {
-      color: `#${hslToHex(
-        5 + Math.random() * 15 - 7,
-        70 + Math.random() * 15,
-        50 + Math.random() * 10
-      )}`,
-      value: hslToHex(
-        5 + Math.random() * 15 - 7,
-        70 + Math.random() * 15,
-        50 + Math.random() * 10
-      ),
+      color: `#${errorHex}`,
+      value: errorHex,
       "aria-label": "Error",
     },
     {
-      color: `#${hslToHex(
-        210 + Math.random() * 20 - 10,
-        75 + Math.random() * 15,
-        45 + Math.random() * 10
-      )}`,
-      value: hslToHex(
-        210 + Math.random() * 20 - 10,
-        75 + Math.random() * 15,
-        45 + Math.random() * 10
-      ),
+      color: `#${infoHex}`,
+      value: infoHex,
       "aria-label": "Info",
     },
   ]
