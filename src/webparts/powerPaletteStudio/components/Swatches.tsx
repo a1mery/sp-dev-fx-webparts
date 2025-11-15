@@ -1,4 +1,5 @@
 import {
+  Button,
   ColorSwatch,
   makeStyles,
   SwatchPicker,
@@ -8,6 +9,7 @@ import {
 import * as React from "react"
 import { ColorPicker } from "./ColorPicker"
 import { IColor } from "../models/IColors"
+import { CopyToast, useCopyToast } from "./CopyToast"
 
 export interface SwatchesProps {
   colors: { color: string; value: string; "aria-label": string }[]
@@ -43,35 +45,49 @@ export const Swatches: React.FC<SwatchesProps> = ({ colors, setColors }) => {
       )
     )
   }
+  const { showCopyToast } = useCopyToast()
 
   const styles = useStyles()
 
   return (
-    <SwatchPicker
-      aria-label='SwatchPicker row layout'
-      shape='circular'
-      size='large'
-      spacing='medium'
-      className={styles.swatchPicker}
-    >
-      {colors.map((color, index) => {
-        return (
-          <section className={styles.swatchContainer} key={color.value}>
-            <ColorPicker
-              color={color.color}
-              onColorChange={(newColor) => handleColorChange(index, newColor)}
-            >
-              <ColorSwatch
-                key={color.value}
-                {...color}
-                className={styles.customSwatch}
-              />
-            </ColorPicker>
-            <Text weight='semibold'>{color["aria-label"]}</Text>
-            <Text size={100}>{color.color}</Text>
-          </section>
-        )
-      })}
-    </SwatchPicker>
+    <>
+      <CopyToast />
+      <SwatchPicker
+        aria-label='SwatchPicker row layout'
+        shape='circular'
+        size='large'
+        spacing='medium'
+        className={styles.swatchPicker}
+      >
+        {colors.map((color, index) => {
+          return (
+            <section className={styles.swatchContainer} key={color.value}>
+              <ColorPicker
+                color={color.color}
+                onColorChange={(newColor) => handleColorChange(index, newColor)}
+              >
+                <ColorSwatch
+                  key={color.value}
+                  {...color}
+                  className={styles.customSwatch}
+                />
+              </ColorPicker>
+              <Text weight='semibold'>{color["aria-label"]}</Text>
+              <Button
+                appearance='transparent'
+                size='small'
+                shape='circular'
+                onClick={() => {
+                  navigator.clipboard.writeText(color.color)
+                  showCopyToast()
+                }}
+              >
+                {color.color}
+              </Button>
+            </section>
+          )
+        })}
+      </SwatchPicker>
+    </>
   )
 }
