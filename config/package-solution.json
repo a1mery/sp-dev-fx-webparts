@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
   "solution": {
-    "name": "power-palette-studio-client-side-solution",
+    "name": "power-palette-studio",
     "id": "d14bd7a6-5659-459d-bd1f-0ab2ab305c52",
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
