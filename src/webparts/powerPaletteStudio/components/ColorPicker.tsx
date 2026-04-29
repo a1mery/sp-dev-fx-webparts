@@ -17,10 +17,11 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: "10px",
+    padding: "12px",
   },
-  colorpicker: {
-    width: "200px",
-    height: "200px",
+  colorArea: {
+    width: "280px",
+    height: "280px",
   },
 })
 
@@ -41,16 +42,23 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   )
   const [namedColor, setNamedColor] = React.useState("")
   const [open, setOpen] = React.useState(false)
+  const isChangingColor = React.useRef(false)
 
   React.useEffect(() => {
-    setColor(tinycolor(initialColor).toHsv())
+    if (!isChangingColor.current) {
+      setColor(tinycolor(initialColor).toHsv())
+    }
   }, [initialColor])
 
   const handleOpenChange = (_: unknown, data: { open: boolean }) => {
-    setOpen(data.open)
+    // Only allow closing if we're not in the middle of a color change
+    if (!isChangingColor.current || data.open) {
+      setOpen(data.open)
+    }
   }
 
   const handleChange: FluentColorPickerProps["onColorChange"] = (_, data) => {
+    isChangingColor.current = true
     const newColor = { ...data.color, a: data.color.a ?? 1 }
     setColor(newColor)
     const _namedColor = tinycolor(`hsl(${data.color.h},100%,50%)`).toName()
@@ -58,6 +66,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       setNamedColor(_namedColor)
     }
     onColorChange(tinycolor(newColor).toHexString())
+
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      isChangingColor.current = false
+    }, 100)
   }
 
   const colorAriaAttributes = {
@@ -68,16 +81,18 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   }
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={handleOpenChange}
+      withArrow
+      positioning='below-start'
+    >
       <PopoverTrigger disableButtonEnhancement>{children}</PopoverTrigger>
       <PopoverSurface tabIndex={-1}>
         <div className={styles.popoverContent}>
-          <FluentColorPicker
-            color={color}
-            onColorChange={handleChange}
-            shape='rounded'
-          >
+          <FluentColorPicker color={color} onColorChange={handleChange}>
             <ColorArea
+              className={styles.colorArea}
               inputX={{ "aria-label": "Saturation", ...colorAriaAttributes }}
               inputY={{ "aria-label": "Brightness", ...colorAriaAttributes }}
             />
