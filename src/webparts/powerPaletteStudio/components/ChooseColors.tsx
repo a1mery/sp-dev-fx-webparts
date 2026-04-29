@@ -2,7 +2,6 @@ import * as React from "react"
 import {
   Button,
   Card,
-  CardFooter,
   CardHeader,
   makeStyles,
   Subtitle1,
@@ -17,6 +16,7 @@ import {
   Code24Regular,
 } from "@fluentui/react-icons"
 import { PreviewCode } from "./PreviewCode"
+import { DashboardPreview } from "./DashboardPreview"
 import { generateColors, generatePowerAppsFormula } from "../utils/color"
 import { defaultColors, IColor } from "../models/IColors"
 
@@ -25,12 +25,44 @@ const useStyles = makeStyles({
     padding: "1.6rem",
     borderTop: `4px solid ${tokens.colorBrandForeground1}`,
   },
+  body: {
+    display: "flex",
+    alignItems: "stretch",
+    marginTop: "0.5rem",
+    "@media (max-width: 1100px)": {
+      flexDirection: "column",
+    },
+  },
+  paletteSection: {
+    flex: "0 0 auto",
+    maxWidth: "520px",
+    display: "flex",
+    flexDirection: "column",
+    "@media (max-width: 1100px)": {
+      maxWidth: "100%",
+    },
+  },
+  divider: {
+    width: "1px",
+    backgroundColor: tokens.colorNeutralStroke2,
+    margin: "0 1.5rem",
+    flexShrink: 0,
+    "@media (max-width: 1100px)": {
+      width: "auto",
+      height: "1px",
+      margin: "1.2rem 0",
+    },
+  },
+  previewSection: {
+    flex: 1,
+    minWidth: 0,
+  },
   actions: {
     display: "flex",
     gap: "12px",
-  },
-  cardFooter: {
-    marginTop: "2rem",
+    flexWrap: "wrap",
+    marginTop: "auto",
+    paddingTop: "2rem",
   },
 })
 
@@ -59,11 +91,10 @@ export const ChooseColors: React.FC = () => {
   return (
     <>
       <Card className={styles.card}>
-        <CardHeader header={<Subtitle1>COLOR PALETTE</Subtitle1>} />
-        <Swatches colors={colors} setColors={setColors} />
-        <CardFooter
-          className={styles.cardFooter}
-          action={
+        <CardHeader header={<Subtitle1>Color Palette</Subtitle1>} />
+        <div className={styles.body}>
+          <div className={styles.paletteSection}>
+            <Swatches colors={colors} setColors={setColors} />
             <div className={styles.actions}>
               <Button
                 appearance='primary'
@@ -80,8 +111,14 @@ export const ChooseColors: React.FC = () => {
                 Copy code
               </Button>
             </div>
-          }
-        />
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.previewSection}>
+            <DashboardPreview colors={colors} />
+          </div>
+        </div>
       </Card>
       <PreviewCode
         generatedCode={generatedCode}
