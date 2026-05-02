@@ -51,9 +51,9 @@ This sample is optimally compatible with the following environment configuration
 | Host                        | Supported |
 | --------------------------- | --------- |
 | SharePoint Web Part         | Yes       |
-| SharePoint Full-Page App    | No        |
-| Microsoft Teams Tab         | No        |
-| Microsoft Teams Personal App| No        |
+| SharePoint Full-Page App    | Yes       |
+| Microsoft Teams Tab         | Yes       |
+| Microsoft Teams Personal App| Yes       |
 
 ## Prerequisites
 
