@@ -105,6 +105,7 @@ Click the **Generate** button in the header to create a new harmonious 7-color p
 ### Customizing Colors
 
 Click any color swatch to open the HSL color picker. Use:
+
 - **Color area** — drag to set hue and saturation visually
 - **Hue slider** — fine-tune the hue angle (0–360°)
 - **Saturation slider** — adjust color intensity
@@ -114,6 +115,7 @@ The dashboard preview updates in real time as you drag.
 ### Previewing Your Theme
 
 The **Dashboard Preview** panel shows a realistic mockup themed with your palette:
+
 - **Desktop view** — a browser-chrome frame with a sidebar, stat cards, and activity list
 - **Mobile view** — a phone frame with a stacked layout and bottom navigation bar
 
@@ -177,7 +179,7 @@ src/
 
 - [Getting started with SharePoint Framework](https://docs.microsoft.com/sharepoint/dev/spfx/set-up-your-developer-tenant)
 - [Fluent UI v9 React Components](https://react.fluentui.dev/)
-- [Power Apps theming and color functions](https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/functions/function-colors)
+- [Power Apps theming and color functions](https://learn.microsoft.com/power-apps/maker/canvas-apps/functions/function-colors)
 - [Microsoft 365 Patterns and Practices](https://aka.ms/m365pnp) - Guidance, tooling, samples and open-source controls for your Microsoft 365 development
 
 <img src="https://m365-visitor-stats.azurewebsites.net/sp-dev-fx-webparts/samples/react-powerapps-power-palette" />
