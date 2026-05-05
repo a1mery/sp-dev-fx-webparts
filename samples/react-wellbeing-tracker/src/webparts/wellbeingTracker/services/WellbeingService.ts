@@ -42,7 +42,7 @@ export class WellbeingService {
       .items
       .add({ Title: title, Category: category });
 
-    const data = result.data as { Id: number; Title: string; Category: string };
+    const data = result as unknown as { Id: number; Title: string; Category: string };
     return { id: data.Id, title: data.Title, category: data.Category as IActivity['category'] };
   }
 
@@ -54,7 +54,7 @@ export class WellbeingService {
       .getByTitle(this._completionsListName)
       .items
       .select('Id', 'ActivityId', 'CompletionDate')
-      .filter(`CompletionDate ge '${start}' and CompletionDate le '${end}' and AuthorId eq ${this._currentUserId}`)
+      .filter(`CompletionDate ge '${start}T00:00:00Z' and CompletionDate le '${end}T00:00:00Z' and AuthorId eq ${this._currentUserId}`)
       .top(500)();
 
     return items.map(item => ({
@@ -69,12 +69,12 @@ export class WellbeingService {
     const result = await this._sp.web.lists
       .getByTitle(this._completionsListName)
       .items
-      .add({ Title: dateStr, ActivityId: activityId, CompletionDate: dateStr });
+      .add({ Title: dateStr, ActivityId: activityId, CompletionDate: `${dateStr}T00:00:00Z` });
 
-    const data = result.data as { Id: number; ActivityId: number; CompletionDate: string };
+    const data = result as unknown as { Id: number; CompletionDate: string };
     return {
       id: data.Id,
-      activityId: data.ActivityId,
+      activityId: activityId,
       completionDate: data.CompletionDate ? data.CompletionDate.split('T')[0] : dateStr,
     };
   }
