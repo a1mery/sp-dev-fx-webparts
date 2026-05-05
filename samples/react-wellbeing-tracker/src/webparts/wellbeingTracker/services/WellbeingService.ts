@@ -75,7 +75,7 @@ export class WellbeingService {
     return {
       id: data.Id,
       activityId: data.ActivityId,
-      completionDate: data.CompletionDate.split('T')[0],
+      completionDate: data.CompletionDate ? data.CompletionDate.split('T')[0] : dateStr,
     };
   }
 

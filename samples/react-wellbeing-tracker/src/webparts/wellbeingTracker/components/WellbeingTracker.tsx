@@ -251,7 +251,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
               <p>Please create the following lists in your SharePoint site:</p>
               <ul>
                 <li><strong>{props.activitiesListName}</strong> — columns: <em>Title</em> (text), <em>Category</em> (choice: Health, Mindfulness, Social)</li>
-                <li><strong>{props.completionsListName}</strong> — columns: <em>Title</em> (text), <em>ActivityId</em> (number), <em>CompletionDate</em> (date)</li>
+                <li><strong>{props.completionsListName}</strong> — columns: <em>Title</em> (text), <em>Activity</em> (lookup → {props.activitiesListName}), <em>CompletionDate</em> (date)</li>
               </ul>
             </div>
           )}

@@ -71,7 +71,7 @@ export default class WellbeingTrackerWebPart extends BaseClientSideWebPart<IWell
                 PropertyPaneTextField('completionsListName', {
                   label: 'Completions List Name',
                   placeholder: 'WellbeingCompletions',
-                  description: 'Columns: Title (text), ActivityId (number), CompletionDate (date)',
+                  description: 'Columns: Title (text), Activity (lookup → WellbeingActivities), CompletionDate (date)',
                 }),
               ],
             },
