@@ -4,6 +4,7 @@ import { IWellbeingTrackerProps } from './IWellbeingTrackerProps';
 import { TrackerGrid } from './TrackerGrid';
 import { IActivity, ICompletion, ViewPeriod } from '../models/IWellbeingModels';
 import { WellbeingService } from '../services/WellbeingService';
+import { getSP } from '../pnpjsConfig';
 import styles from './WellbeingTracker.module.scss';
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -13,14 +14,14 @@ const CATEGORIES  = ['All Activities', 'Health', 'Mindfulness', 'Social'];
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
 function getWeekDates(ref: Date): Date[] {
-  const d = new Date(ref);
+  const d = new Date(ref.getTime());
   d.setHours(0, 0, 0, 0);
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday
-  const monday = new Date(d);
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d.getTime());
   monday.setDate(d.getDate() + diff);
-  return Array.from({ length: 7 }, (_, i) => {
-    const dt = new Date(monday);
+  return Array.from({ length: 7 }, (_: unknown, i: number): Date => {
+    const dt = new Date(monday.getTime());
     dt.setDate(monday.getDate() + i);
     return dt;
   });
@@ -30,7 +31,7 @@ function getMonthDates(ref: Date): Date[] {
   const year = ref.getFullYear();
   const month = ref.getMonth();
   const days = new Date(year, month + 1, 0).getDate();
-  return Array.from({ length: days }, (_, i) => new Date(year, month, i + 1));
+  return Array.from({ length: days }, (_: unknown, i: number): Date => new Date(year, month, i + 1));
 }
 
 function formatPeriodLabel(dates: Date[], period: ViewPeriod): string {
@@ -45,46 +46,51 @@ function formatPeriodLabel(dates: Date[], period: ViewPeriod): string {
   return `${MONTH_FULL[dates[0].getMonth()]} ${dates[0].getFullYear()}`;
 }
 
+function formatError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return 'An unexpected error occurred. Check the list names in web part properties.';
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
-  const today = React.useMemo(() => {
+  const today = React.useMemo<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
 
-  const [activities, setActivities]       = React.useState<IActivity[]>([]);
-  const [completions, setCompletions]     = React.useState<ICompletion[]>([]);
-  const [isLoading, setIsLoading]         = React.useState(true);
-  const [error, setError]                 = React.useState<string | undefined>();
-  const [filterCategory, setFilterCategory] = React.useState('All Activities');
-  const [filterPeriod, setFilterPeriod]   = React.useState<ViewPeriod>('week');
-  const [referenceDate, setReferenceDate] = React.useState<Date>(new Date(today));
-
-  // Add-panel state
-  const [newName, setNewName]             = React.useState('');
-  const [newCategory, setNewCategory]     = React.useState('Health');
-  const [nameError, setNameError]         = React.useState(false);
-  const [isSaving, setIsSaving]           = React.useState(false);
+  const [activities, setActivities]         = React.useState<IActivity[]>([]);
+  const [completions, setCompletions]       = React.useState<ICompletion[]>([]);
+  const [isLoading, setIsLoading]           = React.useState<boolean>(true);
+  const [error, setError]                   = React.useState<string | undefined>();
+  const [filterCategory, setFilterCategory] = React.useState<string>('All Activities');
+  const [filterPeriod, setFilterPeriod]     = React.useState<ViewPeriod>('week');
+  const [referenceDate, setReferenceDate]   = React.useState<Date>(new Date(today.getTime()));
+  const [newName, setNewName]               = React.useState<string>('');
+  const [newCategory, setNewCategory]       = React.useState<string>('Health');
+  const [nameError, setNameError]           = React.useState<boolean>(false);
+  const [isSaving, setIsSaving]             = React.useState<boolean>(false);
 
   const serviceRef = React.useRef<WellbeingService | null>(null);
 
-  // ── Service init ────────────────────────────────────────────────────────────
+  // ── Init service ─────────────────────────────────────────────────────────────
 
   React.useEffect(() => {
-    const svc = new WellbeingService(props.context, props.activitiesListName, props.completionsListName);
+    const svc = new WellbeingService(getSP(), props.activitiesListName, props.completionsListName);
     serviceRef.current = svc;
 
     svc.init()
       .then(() => loadActivities(svc))
-      .catch(err => {
+      .catch((err: unknown) => {
         setError(formatError(err));
         setIsLoading(false);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.activitiesListName, props.completionsListName]);
 
-  // ── Load data ───────────────────────────────────────────────────────────────
+  // ── Load data ─────────────────────────────────────────────────────────────────
 
   async function loadActivities(svc: WellbeingService): Promise<void> {
     try {
@@ -111,14 +117,15 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
     if (!serviceRef.current || isLoading) return;
     setIsLoading(true);
     loadCompletions(serviceRef.current, filterPeriod, referenceDate)
-      .catch(err => setError(formatError(err)))
+      .catch((err: unknown) => setError(formatError(err)))
       .finally(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterPeriod, referenceDate]);
 
-  // ── Navigation ──────────────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────────────────
 
   function navigate(direction: -1 | 1): void {
-    const next = new Date(referenceDate);
+    const next = new Date(referenceDate.getTime());
     if (filterPeriod === 'week') {
       next.setDate(next.getDate() + direction * 7);
     } else {
@@ -127,7 +134,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
     setReferenceDate(next);
   }
 
-  // ── Toggle completion ───────────────────────────────────────────────────────
+  // ── Toggle completion ─────────────────────────────────────────────────────────
 
   async function handleToggle(activityId: number, date: Date, existingId: number | undefined): Promise<void> {
     if (!serviceRef.current) return;
@@ -144,7 +151,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
     }
   }
 
-  // ── Add activity ────────────────────────────────────────────────────────────
+  // ── Add activity ──────────────────────────────────────────────────────────────
 
   async function handleCreate(): Promise<void> {
     const trimmed = newName.trim();
@@ -154,7 +161,6 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
       return;
     }
     if (!serviceRef.current) return;
-
     setIsSaving(true);
     try {
       const added = await serviceRef.current.addActivity(trimmed, newCategory);
@@ -167,17 +173,15 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
     }
   }
 
-  // ── Derived values ──────────────────────────────────────────────────────────
+  // ── Derived values ────────────────────────────────────────────────────────────
 
   const dates = filterPeriod === 'week' ? getWeekDates(referenceDate) : getMonthDates(referenceDate);
-  const isWeekView = filterPeriod === 'week';
   const periodLabel = formatPeriodLabel(dates, filterPeriod);
-
   const visibleActivities = filterCategory === 'All Activities'
     ? activities
     : activities.filter(a => a.category === filterCategory);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.container}>
@@ -187,22 +191,21 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
         <h2 className={styles.title}>{props.title}</h2>
 
         <div className={styles.controls}>
-          {/* Category filter */}
           <select
             value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterCategory(e.target.value)}
             aria-label="Filter by category"
             style={selectStyle}
           >
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
+            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
 
-          {/* Period filter */}
           <select
             value={filterPeriod}
-            onChange={e => { setFilterPeriod(e.target.value as ViewPeriod); setReferenceDate(new Date(today)); }}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setFilterPeriod(e.target.value as ViewPeriod);
+              setReferenceDate(new Date(today.getTime()));
+            }}
             aria-label="View period"
             style={selectStyle}
           >
@@ -210,7 +213,6 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             <option value="month">This Month</option>
           </select>
 
-          {/* Week/Month navigation */}
           <div className={styles.navGroup}>
             <button className={styles.navBtn} onClick={() => navigate(-1)} aria-label="Previous period">
               <ChevronLeft />
@@ -221,8 +223,10 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             </button>
           </div>
 
-          {/* Add Activity shortcut */}
-          <button className={styles.addBtn} onClick={() => document.getElementById('wellbeing-name-input')?.focus()}>
+          <button
+            className={styles.addBtn}
+            onClick={() => { const el = document.getElementById('wellbeing-name-input'); if (el) el.focus(); }}
+          >
             <PlusIcon /> Add Activity
           </button>
         </div>
@@ -241,7 +245,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
           >
             {error}
           </MessageBar>
-          {error.toLowerCase().includes('list') && (
+          {error.toLowerCase().indexOf('list') !== -1 && (
             <div className={styles.setupMessage}>
               <h3>SharePoint List Setup Required</h3>
               <p>Please create the following lists in your SharePoint site:</p>
@@ -268,13 +272,13 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
           completions={completions}
           dates={dates}
           today={today}
-          isWeekView={isWeekView}
+          isWeekView={filterPeriod === 'week'}
           onToggle={handleToggle}
         />
       )}
 
       {/* Add Activity Panel */}
-      <div className={styles.addPanel} id="wellbeing-add-panel">
+      <div className={styles.addPanel}>
         <div className={styles.addPanelLabel}>New Activity</div>
         <div className={styles.addPanelForm}>
           <input
@@ -284,14 +288,13 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             placeholder="e.g., Morning Walk, Yoga, Team Check-in..."
             value={newName}
             maxLength={80}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleCreate()}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { handleCreate().catch(() => { /* handled inside */ }); } }}
             aria-label="New activity name"
           />
-
           <select
             value={newCategory}
-            onChange={e => setNewCategory(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewCategory(e.target.value)}
             aria-label="Activity category"
             style={selectStyle}
           >
@@ -299,10 +302,9 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             <option value="Mindfulness">Mindfulness</option>
             <option value="Social">Social</option>
           </select>
-
           <button
             className={styles.createBtn}
-            onClick={handleCreate}
+            onClick={() => { handleCreate().catch(() => { /* handled inside */ }); }}
             disabled={isSaving}
             aria-label="Create activity"
           >
@@ -314,7 +316,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
   );
 };
 
-// ── Inline style for native selects (matches Fluent UI feel) ──────────────────
+// ── Inline style for native selects ───────────────────────────────────────────
 
 const selectStyle: React.CSSProperties = {
   appearance: 'none',
@@ -329,7 +331,7 @@ const selectStyle: React.CSSProperties = {
   outline: 'none',
 };
 
-// ── Inline SVG icons ──────────────────────────────────────────────────────────
+// ── SVG icons ─────────────────────────────────────────────────────────────────
 
 const ChevronLeft: React.FC = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -349,11 +351,5 @@ const PlusIcon: React.FC = () => (
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return 'An unexpected error occurred. Check the list names in web part properties.';
-}
 
 export default WellbeingTracker;

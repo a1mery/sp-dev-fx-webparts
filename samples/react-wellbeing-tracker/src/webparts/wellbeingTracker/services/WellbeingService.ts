@@ -1,9 +1,8 @@
-import { SPFI, spfi, SPFx } from '@pnp/sp';
+import { SPFI } from '@pnp/sp';
 import '@pnp/sp/webs';
 import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/site-users/web';
-import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { IActivity, ICompletion } from '../models/IWellbeingModels';
 
 export class WellbeingService {
@@ -12,19 +11,19 @@ export class WellbeingService {
   private _completionsListName: string;
   private _currentUserId: number = 0;
 
-  constructor(context: WebPartContext, activitiesListName: string, completionsListName: string) {
-    this._sp = spfi().using(SPFx(context));
+  constructor(sp: SPFI, activitiesListName: string, completionsListName: string) {
+    this._sp = sp;
     this._activitiesListName = activitiesListName;
     this._completionsListName = completionsListName;
   }
 
   public async init(): Promise<void> {
     const user = await this._sp.web.currentUser.select('Id')();
-    this._currentUserId = user.Id;
+    this._currentUserId = (user as { Id: number }).Id;
   }
 
   public async getActivities(): Promise<IActivity[]> {
-    const items = await this._sp.web.lists
+    const items: { Id: number; Title: string; Category: string }[] = await this._sp.web.lists
       .getByTitle(this._activitiesListName)
       .items
       .select('Id', 'Title', 'Category')
@@ -33,24 +32,25 @@ export class WellbeingService {
     return items.map(item => ({
       id: item.Id,
       title: item.Title,
-      category: item.Category,
+      category: item.Category as IActivity['category'],
     }));
   }
 
   public async addActivity(title: string, category: string): Promise<IActivity> {
-    const { data } = await this._sp.web.lists
+    const result = await this._sp.web.lists
       .getByTitle(this._activitiesListName)
       .items
       .add({ Title: title, Category: category });
 
-    return { id: data.Id, title: data.Title, category: data.Category };
+    const data = result.data as { Id: number; Title: string; Category: string };
+    return { id: data.Id, title: data.Title, category: data.Category as IActivity['category'] };
   }
 
   public async getCompletions(startDate: Date, endDate: Date): Promise<ICompletion[]> {
     const start = this._toDateKey(startDate);
     const end = this._toDateKey(endDate);
 
-    const items = await this._sp.web.lists
+    const items: { Id: number; ActivityId: number; CompletionDate: string }[] = await this._sp.web.lists
       .getByTitle(this._completionsListName)
       .items
       .select('Id', 'ActivityId', 'CompletionDate')
@@ -60,21 +60,22 @@ export class WellbeingService {
     return items.map(item => ({
       id: item.Id,
       activityId: item.ActivityId,
-      completionDate: (item.CompletionDate as string).split('T')[0],
+      completionDate: item.CompletionDate.split('T')[0],
     }));
   }
 
   public async addCompletion(activityId: number, date: Date): Promise<ICompletion> {
     const dateStr = this._toDateKey(date);
-    const { data } = await this._sp.web.lists
+    const result = await this._sp.web.lists
       .getByTitle(this._completionsListName)
       .items
       .add({ Title: dateStr, ActivityId: activityId, CompletionDate: dateStr });
 
+    const data = result.data as { Id: number; ActivityId: number; CompletionDate: string };
     return {
       id: data.Id,
       activityId: data.ActivityId,
-      completionDate: (data.CompletionDate as string).split('T')[0],
+      completionDate: data.CompletionDate.split('T')[0],
     };
   }
 

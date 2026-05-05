@@ -9,6 +9,7 @@ import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
 import WellbeingTracker from './components/WellbeingTracker';
 import { IWellbeingTrackerProps } from './components/IWellbeingTrackerProps';
+import { getSP } from './pnpjsConfig';
 
 export interface IWellbeingTrackerWebPartProps {
   title: string;
@@ -18,11 +19,15 @@ export interface IWellbeingTrackerWebPartProps {
 
 export default class WellbeingTrackerWebPart extends BaseClientSideWebPart<IWellbeingTrackerWebPartProps> {
 
+  public async onInit(): Promise<void> {
+    await super.onInit();
+    getSP(this.context);
+  }
+
   public render(): void {
     const element: React.ReactElement<IWellbeingTrackerProps> = React.createElement(
       WellbeingTracker,
       {
-        context: this.context,
         title: this.properties.title || 'Wellbeing & Engagement Tracker',
         activitiesListName: this.properties.activitiesListName || 'WellbeingActivities',
         completionsListName: this.properties.completionsListName || 'WellbeingCompletions',
@@ -61,12 +66,12 @@ export default class WellbeingTrackerWebPart extends BaseClientSideWebPart<IWell
                 PropertyPaneTextField('activitiesListName', {
                   label: 'Activities List Name',
                   placeholder: 'WellbeingActivities',
-                  description: 'List with Title (text) and Category (choice: Health, Mindfulness, Social) columns',
+                  description: 'Columns: Title (text), Category (choice: Health, Mindfulness, Social)',
                 }),
                 PropertyPaneTextField('completionsListName', {
                   label: 'Completions List Name',
                   placeholder: 'WellbeingCompletions',
-                  description: 'List with Title (text), ActivityId (number), and CompletionDate (date) columns',
+                  description: 'Columns: Title (text), ActivityId (number), CompletionDate (date)',
                 }),
               ],
             },

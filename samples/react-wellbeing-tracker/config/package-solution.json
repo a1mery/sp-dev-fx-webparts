@@ -25,7 +25,14 @@
       "videoUrl": "",
       "categories": []
     },
-    "features": []
+    "features": [
+      {
+        "title": "react-wellbeing-tracker Feature",
+        "description": "The feature that activates elements of the react-wellbeing-tracker solution.",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "version": "1.0.0.0"
+      }
+    ]
   },
   "paths": {
     "zippedPackage": "solution/react-wellbeing-tracker.sppkg"
