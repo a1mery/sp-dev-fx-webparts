@@ -2,6 +2,7 @@ import { SPFI } from '@pnp/sp';
 import '@pnp/sp/webs';
 import '@pnp/sp/lists';
 import '@pnp/sp/items';
+import '@pnp/sp/fields';
 import '@pnp/sp/site-users/web';
 import { IActivity, ICompletion } from '../models/IWellbeingModels';
 
@@ -20,6 +21,15 @@ export class WellbeingService {
   public async init(): Promise<void> {
     const user = await this._sp.web.currentUser.select('Id')();
     this._currentUserId = (user as { Id: number }).Id;
+  }
+
+  public async getCategories(): Promise<string[]> {
+    const field = await this._sp.web.lists
+      .getByTitle(this._activitiesListName)
+      .fields
+      .getByInternalNameOrTitle('Category')
+      .select('Choices')();
+    return (field as { Choices: string[] }).Choices || [];
   }
 
   public async getActivities(): Promise<IActivity[]> {
@@ -50,30 +60,32 @@ export class WellbeingService {
     const start = this._toDateKey(startDate);
     const end = this._toDateKey(endDate);
 
-    const items: { Id: number; ActivityId: number; CompletionDate: string }[] = await this._sp.web.lists
+    const items: { Id: number; Title: string; ActivityId: number; CompletionDate: string }[] = await this._sp.web.lists
       .getByTitle(this._completionsListName)
       .items
-      .select('Id', 'ActivityId', 'CompletionDate')
+      .select('Id', 'Title', 'ActivityId', 'CompletionDate')
       .filter(`CompletionDate ge '${start}T00:00:00Z' and CompletionDate le '${end}T00:00:00Z' and AuthorId eq ${this._currentUserId}`)
       .top(500)();
 
     return items.map(item => ({
       id: item.Id,
+      title: item.Title,
       activityId: item.ActivityId,
       completionDate: item.CompletionDate.split('T')[0],
     }));
   }
 
-  public async addCompletion(activityId: number, date: Date): Promise<ICompletion> {
+  public async addCompletion(activityId: number, date: Date, title: string): Promise<ICompletion> {
     const dateStr = this._toDateKey(date);
     const result = await this._sp.web.lists
       .getByTitle(this._completionsListName)
       .items
-      .add({ Title: dateStr, ActivityId: activityId, CompletionDate: `${dateStr}T00:00:00Z` });
+      .add({ Title: title, ActivityId: activityId, CompletionDate: `${dateStr}T00:00:00Z` });
 
     const data = result as unknown as { Id: number; CompletionDate: string };
     return {
       id: data.Id,
+      title: title,
       activityId: activityId,
       completionDate: data.CompletionDate ? data.CompletionDate.split('T')[0] : dateStr,
     };

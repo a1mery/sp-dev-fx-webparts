@@ -9,7 +9,6 @@ import styles from './WellbeingTracker.module.scss';
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_FULL  = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const CATEGORIES  = ['All Activities', 'Health', 'Mindfulness', 'Social'];
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -63,13 +62,14 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 
   const [activities, setActivities]         = React.useState<IActivity[]>([]);
   const [completions, setCompletions]       = React.useState<ICompletion[]>([]);
+  const [categories, setCategories]         = React.useState<string[]>([]);
   const [isLoading, setIsLoading]           = React.useState<boolean>(true);
   const [error, setError]                   = React.useState<string | undefined>();
   const [filterCategory, setFilterCategory] = React.useState<string>('All Activities');
   const [filterPeriod, setFilterPeriod]     = React.useState<ViewPeriod>('week');
   const [referenceDate, setReferenceDate]   = React.useState<Date>(new Date(today.getTime()));
   const [newName, setNewName]               = React.useState<string>('');
-  const [newCategory, setNewCategory]       = React.useState<string>('Health');
+  const [newCategory, setNewCategory]       = React.useState<string>('');
   const [nameError, setNameError]           = React.useState<boolean>(false);
   const [isSaving, setIsSaving]             = React.useState<boolean>(false);
 
@@ -94,8 +94,10 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 
   async function loadActivities(svc: WellbeingService): Promise<void> {
     try {
-      const acts = await svc.getActivities();
+      const [acts, cats] = await Promise.all([svc.getActivities(), svc.getCategories()]);
       setActivities(acts);
+      setCategories(cats);
+      setNewCategory(prev => prev || cats[0] || '');
       await loadCompletions(svc, filterPeriod, referenceDate);
     } catch (err) {
       setError(formatError(err));
@@ -136,14 +138,14 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 
   // ── Toggle completion ─────────────────────────────────────────────────────────
 
-  async function handleToggle(activityId: number, date: Date, existingId: number | undefined): Promise<void> {
+  async function handleToggle(activityId: number, date: Date, existingId: number | undefined, activityTitle: string): Promise<void> {
     if (!serviceRef.current) return;
     try {
       if (existingId !== undefined) {
         await serviceRef.current.removeCompletion(existingId);
         setCompletions(prev => prev.filter(c => c.id !== existingId));
       } else {
-        const added = await serviceRef.current.addCompletion(activityId, date);
+        const added = await serviceRef.current.addCompletion(activityId, date, activityTitle);
         setCompletions(prev => [...prev, added]);
       }
     } catch (err) {
@@ -181,6 +183,11 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
     ? activities
     : activities.filter(a => a.category === filterCategory);
 
+  const existingCategories = React.useMemo<string[]>(
+    () => ['All Activities', ...categories],
+    [categories]
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -197,7 +204,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             aria-label="Filter by category"
             style={selectStyle}
           >
-            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {existingCategories.map((cat: string) => <option key={cat} value={cat}>{cat}</option>)}
           </select>
 
           <select
@@ -298,9 +305,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             aria-label="Activity category"
             style={selectStyle}
           >
-            <option value="Health">Health</option>
-            <option value="Mindfulness">Mindfulness</option>
-            <option value="Social">Social</option>
+            {categories.map((c: string) => <option key={c} value={c}>{c}</option>)}
           </select>
           <button
             className={styles.createBtn}

@@ -8,7 +8,7 @@ export interface ITrackerGridProps {
   dates: Date[];
   today: Date;
   isWeekView: boolean;
-  onToggle: (activityId: number, date: Date, existingCompletionId: number | undefined) => void;
+  onToggle: (activityId: number, date: Date, existingCompletionId: number | undefined, activityTitle: string) => void;
 }
 
 const DAY_ABBREVS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -18,6 +18,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   Mindfulness: '#a855f7',
   Social: '#3b82f6',
 };
+
+const FALLBACK_PALETTE = ['#f97316', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#ef4444', '#0ea5e9', '#84cc16'];
+
+function getCategoryColor(category: string): string {
+  if (!category) return FALLBACK_PALETTE[0];
+  if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = (hash * 31 + category.charCodeAt(i)) & 0x7fffffff;
+  }
+  return FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
+}
 
 function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -61,12 +73,12 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
   const todayKey = toDateKey(today);
   const numDays = dates.length;
 
-  // Build a lookup map: activityId → dateKey → completionId
+  // Build a lookup map: activityId → dateKey → completion
   const completionMap = React.useMemo(() => {
-    const map: Record<number, Record<string, number>> = {};
+    const map: Record<number, Record<string, ICompletion>> = {};
     completions.forEach(c => {
       if (!map[c.activityId]) map[c.activityId] = {};
-      map[c.activityId][c.completionDate] = c.id;
+      map[c.activityId][c.completionDate] = c;
     });
     return map;
   }, [completions]);
@@ -117,22 +129,22 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
           const actCompletions = completionMap[activity.id] || {};
           const completedDays = dates.filter(d => actCompletions[toDateKey(d)]).length;
           const consistency = Math.round((completedDays / numDays) * 100);
-          const dotColor = CATEGORY_COLORS[activity.category] || '#6b7280';
+          const dotColor = getCategoryColor(activity.category);
 
           return (
             <React.Fragment key={activity.id}>
               {/* Activity name */}
-              <div className={styles.activityName} title={activity.title}>
+              <div className={styles.activityName} title={`${activity.title} (${activity.category})`}>
                 <span className={styles.categoryDot} style={{ background: dotColor }} />
-                {activity.title}
+                {activity.title} <span className={styles.categoryLabel}>({activity.category})</span>
               </div>
 
               {/* Day cells */}
               {dates.map(date => {
                 const key = toDateKey(date);
                 const isFuture = date > today;
-                const completionId = actCompletions[key];
-                const isCompleted = completionId !== undefined;
+                const completion = actCompletions[key];
+                const isCompleted = completion !== undefined;
 
                 const cellStateClass = isFuture
                   ? styles.cellFuture
@@ -145,9 +157,9 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
                     <button
                       className={`${styles.cell} ${cellStateClass}`}
                       style={{ width: cellSize, height: cellSize }}
-                      onClick={() => !isFuture && onToggle(activity.id, date, completionId)}
+                      onClick={() => !isFuture && onToggle(activity.id, date, completion?.id, activity.title)}
                       disabled={isFuture}
-                      title={`${date.toDateString()}${isCompleted ? ' — Completed' : ''}`}
+                      title={completion ? completion.completionDate : date.toDateString()}
                       aria-label={`${activity.title} on ${date.toDateString()}${isCompleted ? ', completed' : ', not completed'}`}
                       aria-pressed={isCompleted}
                     >
