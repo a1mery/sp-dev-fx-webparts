@@ -72,8 +72,19 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
   const [newCategory, setNewCategory]       = React.useState<string>('');
   const [nameError, setNameError]           = React.useState<boolean>(false);
   const [isSaving, setIsSaving]             = React.useState<boolean>(false);
+  const [isDark, setIsDark]                 = React.useState<boolean>(() => {
+    try { return localStorage.getItem('wt-dark') === '1'; } catch { return false; }
+  });
 
   const serviceRef = React.useRef<WellbeingService | null>(null);
+
+  function toggleDark(): void {
+    setIsDark(prev => {
+      const next = !prev;
+      try { localStorage.setItem('wt-dark', next ? '1' : '0'); } catch { /* storage unavailable */ }
+      return next;
+    });
+  }
 
   // ── Init service ─────────────────────────────────────────────────────────────
 
@@ -191,7 +202,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container}${isDark ? ` ${styles.dark}` : ''}`}>
 
       {/* Header */}
       <div className={styles.header}>
@@ -236,6 +247,16 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             onClick={() => { const el = document.getElementById('wellbeing-name-input'); if (el) el.focus(); }}
           >
             <PlusIcon /> Add Activity
+          </button>
+
+          <button
+            type="button"
+            className={styles.darkToggle}
+            onClick={toggleDark}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <SunIcon /> : <MoonIcon />}
           </button>
         </div>
       </div>
@@ -324,6 +345,26 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
+
+const MoonIcon: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+const SunIcon: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+);
 
 const ChevronLeft: React.FC = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
