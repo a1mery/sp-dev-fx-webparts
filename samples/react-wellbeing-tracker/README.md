@@ -9,6 +9,7 @@ A web part for tracking personal wellbeing and engagement habits directly in Sha
 - Filter activities by category (Health, Mindfulness, Social, or custom)
 - See per-activity consistency progress bars at a glance
 - Add new activities inline without leaving the page
+- Light and dark mode with preference saved across sessions
 - Accessible, responsive UI built with Fluent UI and PnP JS
 
 ![screenshot](./assets/screenshot.png)
@@ -57,21 +58,25 @@ Create two SharePoint lists in your target site:
 
 ## Version history
 
-| Version | Date         | Comments        |
-| ------- | ------------ | --------------- |
-| 1.0     | May 6, 2026  | Initial release |
+| Version | Date         | Comments                          |
+| ------- | ------------ | --------------------------------- |
+| 1.1     | May 6, 2026  | Dark mode, accessibility fixes    |
+| 1.0     | May 1, 2026  | Initial release                   |
 
 ## Features
 
 - Grid-based tracker showing activities as rows and days as columns
-- Week view (Mon–Sun) and month view with previous/next navigation
+- Week view (Mon–Sun) and month view with previous/next period navigation
 - One-click toggle to mark a day complete or undo a completion
 - Category filter dropdown dynamically populated from the SharePoint Choice field
-- Per-activity progress bar with colour-coded consistency (green ≥ 70%, blue ≥ 40%, amber below)
-- Inline "New Activity" panel to add activities without a page reload
-- Category colour dots auto-assigned (Health = green, Mindfulness = purple, Social = blue, others hashed from a palette)
-- Empty state, loading spinner, and dismissible error bar with SharePoint list setup hints
-- Fully accessible — buttons include `aria-label` and `aria-pressed` attributes
+- Per-activity progress bar colour-coded by consistency: green ≥ 70%, blue ≥ 40%, amber below
+- Inline "New Activity" panel — add a habit without leaving the page
+- Category colour dots auto-assigned (Health = green, Mindfulness = purple, Social = blue; unknown categories hashed to a stable colour from a palette)
+
+
+### Dark Mode
+
+A moon/sun icon button in the bottom-right corner of the web part switches between light and dark themes. All colours are driven by CSS custom properties defined on the container, making the switch instant with no flicker.
 
 ## Minimal Path to Awesome
 
@@ -130,6 +135,10 @@ To add or change categories, edit the `Category` choice field choices directly i
 - Completions not saving:
   - Ensure the current user has Contribute permission on both lists
   - Check that the `Activity` lookup column points to the correct activities list
+
+- Dark mode not persisting:
+  - Confirm the browser allows `localStorage` for your SharePoint domain
+  - Private/incognito browsing clears storage on tab close
 
 ## Scripts (common)
 
