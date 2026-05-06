@@ -129,6 +129,13 @@
   min-width: min-content;
 }
 
+// Precomputed column templates for every possible view — avoids any inline style.
+.gridWeek    { grid-template-columns: 200px repeat(7,  44px) 185px; }
+.gridMonth28 { grid-template-columns: 160px repeat(28, 28px) 185px; }
+.gridMonth29 { grid-template-columns: 160px repeat(29, 28px) 185px; }
+.gridMonth30 { grid-template-columns: 160px repeat(30, 28px) 185px; }
+.gridMonth31 { grid-template-columns: 160px repeat(31, 28px) 185px; }
+
 // ─── Column headers ───────────────────────────────────────────────────────────
 
 .colHeaderActivity {
@@ -194,14 +201,13 @@
 }
 
 .categoryDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
   flex-shrink: 0;
-  display: inline-block;
 }
 
 // ─── Day cell ─────────────────────────────────────────────────────────────────
+
+.cellWeek  { width: 36px; height: 36px; }
+.cellMonth { width: 22px; height: 22px; }
 
 .cellWrap {
   display: flex;
@@ -263,20 +269,32 @@
   padding: 0 0 0 16px;
 }
 
-.progressTrack {
+.progressBar {
+  appearance: none;
   flex: 1;
   min-width: 70px;
   max-width: 90px;
   height: 7px;
-  background: #e2e8f0;
+  border: none;
   border-radius: 4px;
-  overflow: hidden;
+  background: #e2e8f0;
+
+  // Track (WebKit)
+  &::-webkit-progress-bar { background: #e2e8f0; border-radius: 4px; }
 }
 
-.progressFill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
+// Fill colours via pseudo-elements — no inline style needed.
+.progressHigh {
+  &::-webkit-progress-value { background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 4px; }
+  &::-moz-progress-bar      { background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 4px; }
+}
+.progressMid {
+  &::-webkit-progress-value { background: linear-gradient(90deg, #3b82f6, #06b6d4); border-radius: 4px; }
+  &::-moz-progress-bar      { background: linear-gradient(90deg, #3b82f6, #06b6d4); border-radius: 4px; }
+}
+.progressLow {
+  &::-webkit-progress-value { background: linear-gradient(90deg, #f59e0b, #f97316); border-radius: 4px; }
+  &::-moz-progress-bar      { background: linear-gradient(90deg, #f59e0b, #f97316); border-radius: 4px; }
 }
 
 .progressText {
@@ -352,14 +370,7 @@
   &.inputError {
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
-    animation: shake 0.3s ease;
   }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25%       { transform: translateX(-4px); }
-  75%       { transform: translateX(4px); }
 }
 
 .createBtn {
@@ -389,6 +400,31 @@
     cursor: not-allowed;
     transform: none;
   }
+}
+
+// ─── Native select ────────────────────────────────────────────────────────────
+
+.nativeSelect {
+  appearance: none;
+  padding: 7px 28px 7px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+  cursor: pointer;
+  outline: none;
+}
+
+// ─── Error / Loading wrappers ─────────────────────────────────────────────────
+
+.errorWrapper   { margin-bottom: 16px; }
+
+.spinnerWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
 }
 
 // ─── Error / Loading ──────────────────────────────────────────────────────────

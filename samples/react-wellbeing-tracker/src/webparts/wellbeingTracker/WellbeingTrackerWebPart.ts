@@ -21,7 +21,7 @@ export default class WellbeingTrackerWebPart extends BaseClientSideWebPart<IWell
 
   public async onInit(): Promise<void> {
     await super.onInit();
-    getSP(this.context);
+    getSP(this.context); // Bootstrap PnP JS with the SP context before any component mounts.
   }
 
   public render(): void {

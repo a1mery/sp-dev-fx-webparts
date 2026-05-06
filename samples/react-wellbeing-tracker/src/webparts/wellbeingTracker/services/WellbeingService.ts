@@ -18,6 +18,7 @@ export class WellbeingService {
     this._completionsListName = completionsListName;
   }
 
+  // Fetch the current user's SP ID once so completions can be scoped per-user.
   public async init(): Promise<void> {
     const user = await this._sp.web.currentUser.select('Id')();
     this._currentUserId = (user as { Id: number }).Id;
@@ -56,6 +57,7 @@ export class WellbeingService {
     return { id: data.Id, title: data.Title, category: data.Category as IActivity['category'] };
   }
 
+  // AuthorId filter ensures each user only sees their own completions, not the whole team's.
   public async getCompletions(startDate: Date, endDate: Date): Promise<ICompletion[]> {
     const start = this._toDateKey(startDate);
     const end = this._toDateKey(endDate);

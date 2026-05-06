@@ -21,6 +21,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const FALLBACK_PALETTE = ['#f97316', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#ef4444', '#0ea5e9', '#84cc16'];
 
+// Hash-based fallback gives new categories a stable, distinct colour without config.
 function getCategoryColor(category: string): string {
   if (!category) return FALLBACK_PALETTE[0];
   if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
@@ -38,10 +39,21 @@ function toDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function getProgressColor(pct: number): string {
-  if (pct >= 70) return 'linear-gradient(90deg, #22c55e, #16a34a)';
-  if (pct >= 40) return 'linear-gradient(90deg, #3b82f6, #06b6d4)';
-  return 'linear-gradient(90deg, #f59e0b, #f97316)';
+// Three-tier colour scale maps to CSS classes so no inline background is needed.
+function getProgressClass(pct: number): string {
+  if (pct >= 70) return styles.progressHigh;
+  if (pct >= 40) return styles.progressMid;
+  return styles.progressLow;
+}
+
+function getGridClass(weekView: boolean, numDays: number): string {
+  if (weekView) return styles.gridWeek;
+  switch (numDays) {
+    case 28: return styles.gridMonth28;
+    case 29: return styles.gridMonth29;
+    case 30: return styles.gridMonth30;
+    default:  return styles.gridMonth31;
+  }
 }
 
 const CheckIcon: React.FC<{ size: number }> = ({ size }) => (
@@ -73,7 +85,7 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
   const todayKey = toDateKey(today);
   const numDays = dates.length;
 
-  // Build a lookup map: activityId → dateKey → completion
+  // Build a lookup map
   const completionMap = React.useMemo(() => {
     const map: Record<number, Record<string, ICompletion>> = {};
     completions.forEach(c => {
@@ -83,16 +95,12 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
     return map;
   }, [completions]);
 
-  const actColWidth = isWeekView ? 200 : 160;
-  const cellWidth = isWeekView ? 44 : 28;
-  const cellSize = isWeekView ? 36 : 22;
   const checkSize = isWeekView ? 16 : 11;
-
-  const gridTemplateColumns = `${actColWidth}px repeat(${numDays}, ${cellWidth}px) 185px`;
+  const gridClass = getGridClass(isWeekView, numDays);
 
   return (
     <div className={styles.gridContainer}>
-      <div className={styles.gridWrapper} style={{ gridTemplateColumns }}>
+      <div className={`${styles.gridWrapper} ${gridClass}`}>
 
         {/* ── Column headers ── */}
         <div className={styles.colHeaderActivity}>Activity</div>
@@ -135,7 +143,9 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
             <React.Fragment key={activity.id}>
               {/* Activity name */}
               <div className={styles.activityName} title={`${activity.title} (${activity.category})`}>
-                <span className={styles.categoryDot} style={{ background: dotColor }} />
+                <svg width="9" height="9" viewBox="0 0 9 9" className={styles.categoryDot} aria-hidden="true">
+                  <circle cx="4.5" cy="4.5" r="4.5" fill={dotColor} />
+                </svg>
                 {activity.title} <span className={styles.categoryLabel}>({activity.category})</span>
               </div>
 
@@ -155,13 +165,12 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
                 return (
                   <div key={key} className={styles.cellWrap}>
                     <button
-                      className={`${styles.cell} ${cellStateClass}`}
-                      style={{ width: cellSize, height: cellSize }}
+                      type="button"
+                      className={`${styles.cell} ${cellStateClass} ${isWeekView ? styles.cellWeek : styles.cellMonth}`}
                       onClick={() => !isFuture && onToggle(activity.id, date, completion?.id, activity.title)}
                       disabled={isFuture}
                       title={completion ? completion.completionDate : date.toDateString()}
                       aria-label={`${activity.title} on ${date.toDateString()}${isCompleted ? ', completed' : ', not completed'}`}
-                      aria-pressed={isCompleted}
                     >
                       {isCompleted && <CheckIcon size={checkSize} />}
                     </button>
@@ -171,16 +180,12 @@ export const TrackerGrid: React.FC<ITrackerGridProps> = ({ activities, completio
 
               {/* Progress */}
               <div className={styles.progressCell}>
-                <div className={styles.progressTrack}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: `${consistency}%`, background: getProgressColor(consistency) }}
-                    role="progressbar"
-                    aria-valuenow={consistency}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  />
-                </div>
+                <progress
+                  className={`${styles.progressBar} ${getProgressClass(consistency)}`}
+                  value={consistency}
+                  max={100}
+                  aria-label={`${consistency}% consistency`}
+                />
                 <span className={styles.progressText}>{consistency}% consistency</span>
               </div>
 

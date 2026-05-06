@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Get-ChildItem \"c:\\\\SPFx\\\\sp-dev-fx-webparts\\\\samples\\\\react-wellbeing-tracker\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\SPFx\\\\sp-dev-fx-webparts\\\\samples\\\\react-wellbeing-tracker\\\\\", \"\"\\) })"
+      "PowerShell(Get-ChildItem \"c:\\\\SPFx\\\\sp-dev-fx-webparts\\\\samples\\\\react-wellbeing-tracker\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\SPFx\\\\sp-dev-fx-webparts\\\\samples\\\\react-wellbeing-tracker\\\\\", \"\"\\) })",
+      "Bash(npx gulp *)"
     ]
   }
 }

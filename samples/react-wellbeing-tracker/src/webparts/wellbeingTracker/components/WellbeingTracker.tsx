@@ -202,7 +202,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             value={filterCategory}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterCategory(e.target.value)}
             aria-label="Filter by category"
-            style={selectStyle}
+            className={styles.nativeSelect}
           >
             {existingCategories.map((cat: string) => <option key={cat} value={cat}>{cat}</option>)}
           </select>
@@ -214,23 +214,24 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
               setReferenceDate(new Date(today.getTime()));
             }}
             aria-label="View period"
-            style={selectStyle}
+            className={styles.nativeSelect}
           >
             <option value="week">This Week</option>
             <option value="month">This Month</option>
           </select>
 
           <div className={styles.navGroup}>
-            <button className={styles.navBtn} onClick={() => navigate(-1)} aria-label="Previous period">
+            <button type="button" className={styles.navBtn} onClick={() => navigate(-1)} aria-label="Previous period">
               <ChevronLeft />
             </button>
             <span className={styles.periodLabel}>{periodLabel}</span>
-            <button className={styles.navBtn} onClick={() => navigate(1)} aria-label="Next period">
+            <button type="button" className={styles.navBtn} onClick={() => navigate(1)} aria-label="Next period">
               <ChevronRight />
             </button>
           </div>
 
           <button
+            type="button"
             className={styles.addBtn}
             onClick={() => { const el = document.getElementById('wellbeing-name-input'); if (el) el.focus(); }}
           >
@@ -243,7 +244,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 
       {/* Error */}
       {error && (
-        <div style={{ marginBottom: 16 }}>
+        <div className={styles.errorWrapper}>
           <MessageBar
             messageBarType={MessageBarType.error}
             isMultiline={true}
@@ -267,7 +268,7 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
 
       {/* Loading */}
       {isLoading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+        <div className={styles.spinnerWrapper}>
           <Spinner size={SpinnerSize.large} label="Loading tracker..." />
         </div>
       )}
@@ -303,11 +304,12 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
             value={newCategory}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewCategory(e.target.value)}
             aria-label="Activity category"
-            style={selectStyle}
+            className={styles.nativeSelect}
           >
             {categories.map((c: string) => <option key={c} value={c}>{c}</option>)}
           </select>
           <button
+            type="button"
             className={styles.createBtn}
             onClick={() => { handleCreate().catch(() => { /* handled inside */ }); }}
             disabled={isSaving}
@@ -319,21 +321,6 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
       </div>
     </div>
   );
-};
-
-// ── Inline style for native selects ───────────────────────────────────────────
-
-const selectStyle: React.CSSProperties = {
-  appearance: 'none',
-  padding: '7px 28px 7px 12px',
-  border: '1.5px solid #e2e8f0',
-  borderRadius: 8,
-  fontSize: 13,
-  fontWeight: 500,
-  color: '#374151',
-  background: `white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center`,
-  cursor: 'pointer',
-  outline: 'none',
 };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
