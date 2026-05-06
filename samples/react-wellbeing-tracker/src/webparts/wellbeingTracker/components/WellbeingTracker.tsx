@@ -248,16 +248,6 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
           >
             <PlusIcon /> Add Activity
           </button>
-
-          <button
-            type="button"
-            className={styles.darkToggle}
-            onClick={toggleDark}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <SunIcon /> : <MoonIcon />}
-          </button>
         </div>
       </div>
 
@@ -305,6 +295,17 @@ const WellbeingTracker: React.FC<IWellbeingTrackerProps> = (props) => {
           onToggle={handleToggle}
         />
       )}
+
+      {/* Theme toggle — anchored to bottom-right of the container */}
+      <button
+        type="button"
+        className={styles.darkToggle}
+        onClick={toggleDark}
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {isDark ? <SunIcon /> : <MoonIcon />}
+      </button>
 
       {/* Add Activity Panel */}
       <div className={styles.addPanel}>
