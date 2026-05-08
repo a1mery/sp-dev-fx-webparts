@@ -10,7 +10,7 @@
       "Site Content solution contains SPFx web part that provides"
     ],
     "creationDateTime": "2025-09-07",
-    "updateDateTime": "2025-10-12",
+    "updateDateTime": "2025-11-20",
     "products": [
       "SharePoint"
     ],
@@ -33,13 +33,13 @@
         "name": "SiteContent.png",
         "type": "image",
         "order": 100,
-        "url": "https://github.com/pnp/sp-dev-fx-webparts/raw/main/samples/react-site-content/assets/SiteContent.png",
+        "url": "https://github.com/pnp/sp-dev-fx-webparts/raw/main/samples/react-site-content/assets/SiteContentWebpart.png",
         "alt": "Web Part Preview"
       }
     ],
     "authors": [
       {
-        "gitHubAccount": "https://github.com/HarminderSethi",
+        "gitHubAccount": "HarminderSethi",
         "pictureUrl": "https://github.com/HarminderSethi.png",
         "name": "Harminder Singh"
       }

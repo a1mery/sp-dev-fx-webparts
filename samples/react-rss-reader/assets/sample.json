@@ -10,7 +10,7 @@
       "A RSS Reader original based on work by Olivier Carpentier, part of the SPFx Fantastic 40 Web Parts"
     ],
     "creationDateTime": "2024-12-25",
-    "updateDateTime": "2025-10-24",
+    "updateDateTime": "2026-04-15",
     "products": [
       "SharePoint"
     ],
@@ -25,7 +25,7 @@
       },
       {
         "key": "SPFX-VERSION",
-        "value": "1.21.1"
+        "value": "1.22.2"
       }
     ],
     "thumbnails": [
@@ -53,24 +53,29 @@
     ],
     "authors": [
       {
-        "gitHubAccount": "https://github.com/Abderahman88",
+        "gitHubAccount": "Abderahman88",
         "pictureUrl": "https://github.com/Abderahman88.png",
         "name": "Abderahman Moujahid"
       },
       {
-        "gitHubAccount": "https://github.com/eoverfield",
+        "gitHubAccount": "eoverfield",
         "pictureUrl": "https://github.com/eoverfield.png",
         "name": "Eric Overfield"
       },
       {
-        "gitHubAccount": "https://github.com/djsladi",
+        "gitHubAccount": "djsladi",
         "pictureUrl": "https://github.com/djsladi.png",
         "name": "Kalle Mansikkaniemi"
       },
       {
-        "gitHubAccount": "https://github.com/koskimiesl",
+        "gitHubAccount": "koskimiesl",
         "pictureUrl": "https://github.com/koskimiesl.png",
         "name": "Lauri Koskimies"
+      },
+      {
+        "gitHubAccount": "NishkalankBezawada",
+        "pictureUrl": "https://github.com/NishkalankBezawada.png",
+        "name": "Nishkalank Bezawada"
       }
     ],
     "references": [
