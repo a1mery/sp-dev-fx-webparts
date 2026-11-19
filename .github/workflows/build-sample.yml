@@ -1,0 +1,180 @@
+# Builds and packages the single sample changed by a PR, and uploads the .sppkg.
+# Status check name: `build-sample` (used by the console app and by deploy-sample.yml).
+# No secrets are used here.
+
+name: build-sample
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "samples/**"
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: "Sample folder under samples/ (manual run)"
+        required: true
+
+concurrency:
+  group: build-sample-${{ github.event.pull_request.number || github.event.inputs.sample }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. Find the ONE sample this PR changes
+      - name: Detect changed sample
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SAMPLES="${{ github.event.inputs.sample }}"
+          else
+            SAMPLES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- samples/ \
+              | cut -d/ -f2 | sort -u)
+          fi
+
+          COUNT=$(echo "$SAMPLES" | grep -c . || true)
+          if [ "$COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly 1 changed sample, found $COUNT: $SAMPLES"
+            exit 1
+          fi
+          if [ ! -f "samples/$SAMPLES/package.json" ]; then
+            echo "::error::samples/$SAMPLES/package.json not found"
+            exit 1
+          fi
+
+          # Files the upstream PnP repo rejects in a sample PR
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FORBIDDEN=$(git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- "samples/$SAMPLES" \
+              | grep -E '(upgrade-report\.md$|\.sppkg$|/(lib|temp|dist|release|node_modules)/)' || true)
+            if [ -n "$FORBIDDEN" ]; then
+              echo "::error::Forbidden files committed: $FORBIDDEN"
+              exit 1
+            fi
+          fi
+
+          echo "sample=$SAMPLES" >> "$GITHUB_OUTPUT"
+          echo "dir=samples/$SAMPLES" >> "$GITHUB_OUTPUT"
+          echo "Sample: $SAMPLES"
+
+      # 2. Work out SPFx version, Node version and toolchain from the sample itself
+      - name: Inspect sample
+        id: inspect
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          node <<'EOF' >> "$GITHUB_OUTPUT"
+          const pkg = require('./package.json');
+          const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+          const spfx = (deps['@microsoft/sp-core-library'] || '').replace(/[^\d.]/g, '');
+          if (!spfx) { console.error('No @microsoft/sp-core-library found'); process.exit(1); }
+          const [major, minor] = spfx.split('.').map(Number);
+
+          // Node: 1) .nvmrc (required in every PnP sample), 2) engines.node,
+          // 3) fallback mapping. VERIFY the fallback against https://aka.ms/spfx-matrix
+          const fs = require('fs');
+          let node = null;
+          if (fs.existsSync('.nvmrc')) {
+            const m = fs.readFileSync('.nvmrc', 'utf8').match(/(\d+(\.\d+){0,2})/);
+            if (m) node = m[1];
+          }
+          const eng = pkg.engines && pkg.engines.node;
+          if (!node && eng) {
+            // Old samples have meaningless ranges like ">=0.10.0": ignore majors < 8
+            const m = eng.match(/(\d+)/); if (m && Number(m[1]) >= 8) node = m[1];
+          }
+          if (!node) {
+            if (minor >= 21) node = '22';
+            else if (minor >= 18) node = '18';
+            else if (minor >= 15) node = '16';
+            else if (minor >= 12) node = '14';
+            else if (minor >= 10) node = '10';
+            else node = '8';
+          }
+
+          // Toolchain: Heft-based (newer SPFx) vs gulp-based (older SPFx).
+          const heft = Object.keys(deps).some(d => d.startsWith('@rushstack/heft'));
+
+          console.log(`spfx=${spfx}`);
+          console.log(`node=${node}`);
+          console.log(`toolchain=${heft ? 'heft' : 'gulp'}`);
+          EOF
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.inspect.outputs.node }}
+
+      - name: Show context
+        run: |
+          echo "Sample:    ${{ steps.detect.outputs.sample }}"
+          echo "SPFx:      ${{ steps.inspect.outputs.spfx }}"
+          echo "Node:      $(node --version)"
+          echo "Toolchain: ${{ steps.inspect.outputs.toolchain }}"
+
+      # 3. Install
+      - name: Install dependencies
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # 4. Build + package (production)
+      - name: Build and package (gulp)
+        if: steps.inspect.outputs.toolchain == 'gulp'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          npx gulp bundle --ship
+          npx gulp package-solution --ship
+
+      - name: Build and package (heft)
+        if: steps.inspect.outputs.toolchain == 'heft'
+        working-directory: ${{ steps.detect.outputs.dir }}
+        # Heft samples in this repo define:
+        #   "build": "heft test --clean --production && heft package-solution --production"
+        # Fall back to explicit Heft commands if a sample's script differs.
+        run: |
+          if grep -q 'package-solution' package.json; then
+            npm run build
+          else
+            npx heft build --clean --production
+            npx heft package-solution --production
+          fi
+
+      # 5. Collect the .sppkg
+      - name: Locate .sppkg
+        id: pkg
+        working-directory: ${{ steps.detect.outputs.dir }}
+        run: |
+          PKG=$(find sharepoint/solution -maxdepth 1 -name '*.sppkg' | head -n 1)
+          if [ -z "$PKG" ]; then
+            echo "::error::No .sppkg produced"
+            exit 1
+          fi
+          echo "path=${{ steps.detect.outputs.dir }}/$PKG" >> "$GITHUB_OUTPUT"
+          echo "${{ steps.detect.outputs.sample }}" > sample.txt
+          echo "Package: $PKG"
+
+      - name: Upload .sppkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sppkg
+          path: |
+            ${{ steps.pkg.outputs.path }}
+            ${{ steps.detect.outputs.dir }}/sample.txt
+          retention-days: 14
+          if-no-files-found: error

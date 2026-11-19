@@ -1,0 +1,46 @@
+# Prepares the Copilot coding agent's environment before it starts working on an issue.
+# GitHub only picks this up if the file is on the default branch and the job is named
+# exactly `copilot-setup-steps`.
+# Never reference `dev-tenant` secrets here: the agent must not have tenant access.
+
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    env:
+      # Node version required by the TARGET SPFx version.
+      # Keep in sync with the SPFx compatibility matrix whenever the target changes.
+      NODE_VERSION: "22"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install CLI for Microsoft 365
+        run: npm install -g @pnp/cli-microsoft365
+
+      - name: Verify tooling
+        run: |
+          node --version
+          npm --version
+          m365 version
