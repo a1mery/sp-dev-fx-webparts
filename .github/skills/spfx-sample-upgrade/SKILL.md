@@ -41,11 +41,25 @@ The goal is a **like-for-like upgrade**: same features, same behavior, newer SPF
 2. Apply **all** steps of the report, in order, following `.github/skills/spfx/references/upgrade.md` ("Apply the upgrade").
 3. If a step targets a file the sample customized, merge it. Never overwrite custom logic.
 
-### 3. Toolchain (gulp → Heft)
+### 3a. Toolchain (gulp → Heft)
 The toolchain depends on the target version (see `.github/skills/spfx/SKILL.md`, "Toolchain decision rule"):
 - Target **≥ 1.22.0**: the sample must end up on **Heft**.
 - After applying the report, check: if `gulpfile.js` still exists, or no `@rushstack/heft*` package is in `package.json`, the migration isn't done. Complete it by following `references/gulp-to-heft.md`.
 - If `gulpfile.js` contained custom tasks or webpack customizations, port them to the Heft configuration. If you can't, list them in the PR under "Not migrated".
+
+### 3b. React 17 → 18 (target ≥ 1.24)
+- Rendering: replace `ReactDom.render(element, this.domElement)` with
+  `createRoot` from `react-dom/client`. Keep the root in a private field,
+  create it once, call `root.render(element)` in `render()`, and
+  `root.unmount()` in `onDispose()` (replaces `unmountComponentAtNode`).
+- Types: `React.FC` / `React.Component` no longer add `children` implicitly.
+  Add `children?: React.ReactNode` to props interfaces that use it.
+- Third-party React libraries (`@pnp/spfx-controls-react`,
+  `@pnp/spfx-property-controls`, Fluent UI, others): upgrade each to a
+  version that supports React 18 and SPFx 1.24. If none exists, stop and
+  leave the PR as draft with the library name.
+- Do not use new React 18 features. Behavior must stay identical.
+- List every React-related change in the PR under "Build fixes".
 
 ### 4. Install and build
 1. Use the Node version required by the target SPFx version (the agent environment provides it).
