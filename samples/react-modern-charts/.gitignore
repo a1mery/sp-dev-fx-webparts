@@ -1,0 +1,15 @@
+node_modules
+lib
+lib-commonjs
+lib-dts
+lib-esm
+dist
+release
+temp
+sharepoint/solution
+jest-output
+.heft
+*.scss.ts
+*.scss.d.ts
+.DS_Store
+*.log

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
-import { BaseClientSideWebPart, IWebPartContext } from "@microsoft/sp-webpart-base";
+import { BaseClientSideWebPart } from "@microsoft/sp-webpart-base";
 import {
   IPropertyPaneConfiguration,
   PropertyPaneButton,
@@ -15,7 +15,7 @@ import ModernCharts from './components/ModernCharts';
 import { IModernChartsProps } from './IModernChartsWebPartProps';
 import { MChart } from './IModernChartsWebPartProps';
 import { IModernChartsWebPartProps } from './IModernChartsWebPartProps';
-import { ChartConfiguration } from './IModernChartsWebPartProps';
+import { ChartConfiguration, ICalculatedChartData, IFieldProperty } from './IModernChartsWebPartProps';
 import ChartOptions from './ChartOptions';
 import {
   SPHttpClient,
@@ -31,14 +31,27 @@ export interface ISPList {
   Id: string;
 }
 
-export interface IFieldProperty extends IPropertyPaneDropdownOption {
-  fieldtype: string;
+export interface ISPSite {
+  Title: string;
+  Url: string;
 }
+
+export interface ISPSites {
+  value: ISPSite[];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ISPListItem = Record<string, any>;
+
+export interface ISPListItems {
+  value: ISPListItem[];
+}
+
+export type { IFieldProperty } from './IModernChartsWebPartProps';
 
 
 export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernChartsWebPartProps> {
 
-  private reactCharts: React.ReactElement<IModernChartsProps>;
 
   // Columns Enable / Disable
   private colsDisabled: boolean = true;
@@ -72,10 +85,6 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     { key: 'sum', text: 'Sum' }
   ];
 
-  public constructor(context: IWebPartContext) {
-    super();
-  }
-  private ChartThemes: ChartOptions;
 
   private defaultOptions: Object = {
     legend: {
@@ -91,7 +100,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
   };
 
   public defaultChartConfig(chartDesc: string): ChartConfiguration {
-    var defConfig = {
+    const defConfig: ChartConfiguration = {
       title: 'Chart Title',
       description: chartDesc,
       type: 'doughnut',
@@ -111,8 +120,8 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       columns: [],
       lists: this.properties.listOptions,
       theme: "Random",
-      bgColors: ChartOptions.RandomColors()['bgColors'],
-      hoverColors: ChartOptions.RandomColors()['bgColors']
+      bgColors: ChartOptions.RandomColors().bgColors,
+      hoverColors: ChartOptions.RandomColors().bgColors
     };
 
     return defConfig;
@@ -131,18 +140,22 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     this.getChartData();
   }
 
+  protected onDispose(): void {
+    ReactDom.unmountComponentAtNode(this.domElement);
+  }
+
   protected get dataVersion(): Version {
     return Version.parse('1.0');
   }
 
   private getChartData(): void {
     const _chartData: Array<MChart> = [];
-    var _count = 0;
+    let _count = 0;
     this.properties.chartConfig.forEach((cfg, i) => {
       if (cfg.list != null) {
-        this.getData(cfg).then((response) => {
+        void this.getData(cfg).then((response) => {
           const chart = this.calculateData(response.value, cfg);
-          const _chart: MChart = { data: chart['data'], labels: chart['labels'], config: cfg, key: i };
+          const _chart: MChart = { data: chart.data, labels: chart.labels, config: cfg, key: i };
           _chartData[i] = _chart;
           if (++_count == this.properties.chartConfig.length) { this.getCharts(_chartData); }
         });
@@ -168,10 +181,10 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     ReactDom.render(chartArea, this.domElement);
   }
 
-  private calculateData(data: Array<Object>, config: ChartConfiguration): Object {
-    var values: Array<number> = [];
-    var labels: Object = this.getUnique(data, config);
-    var dataVal: Array<Array<any>> = this.getValues(data, labels['unique'], config);
+  private calculateData(data: ISPListItem[], config: ChartConfiguration): ICalculatedChartData {
+    let values: Array<number> = [];
+    const labels = this.getUnique(data, config);
+    const dataVal: Array<Array<any>> = this.getValues(data, labels.unique, config);
 
     switch (config.act) {
       case 'sum':
@@ -202,29 +215,29 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
         values = [100, 250, 90, 300];
         break;
     }
-    return { data: values, labels: labels['labels'] };
+    return { data: values, labels: labels.labels };
   }
 
-  private getUnique(data: Array<Object>, config: ChartConfiguration): Object {
-    const chLabels: Object = { unique: [], labels: [] };
+  private getUnique(data: ISPListItem[], config: ChartConfiguration): { unique: any[]; labels: string[] } {
+    const chLabels: { unique: any[]; labels: string[] } = { unique: [], labels: [] };
     data.forEach((item) => {
-      var uniqueItem = item[config.unique];
-      var isTaxonomyField = item[config.unique].hasOwnProperty('TermGuid');
+      const uniqueItem = item[config.unique];
+      const isTaxonomyField = item[config.unique].hasOwnProperty('TermGuid');
 
-      if ((isTaxonomyField ? !chLabels['unique'].some(field => field['TermGuid'] === uniqueItem['TermGuid']) : chLabels['unique'].indexOf(uniqueItem) == -1) && uniqueItem != null && uniqueItem != "") {
-        chLabels['unique'].push(uniqueItem);
+      if ((isTaxonomyField ? !chLabels.unique.some(field => field.TermGuid === uniqueItem.TermGuid) : chLabels.unique.indexOf(uniqueItem) == -1) && uniqueItem != null && uniqueItem != "") {
+        chLabels.unique.push(uniqueItem);
         //if term use VAlue
-        chLabels['labels'].push(this.getLabel(item, config.col1));
+        chLabels.labels.push(this.getLabel(item, config.col1));
       }
     });
     return chLabels;
   }
 
-  private getLabel(item: Object, col: string) {
-    if (!!item[col] && !!item[col]['WssId'] && !!item["TaxCatchAll"] && item["TaxCatchAll"].length > 0) {
+  private getLabel(item: ISPListItem, col: string): any {
+    if (!!item[col] && !!item[col].WssId && !!item.TaxCatchAll && item.TaxCatchAll.length > 0) {
       //Filter because you can have more Fields from this type to select the right value
-      const wssid: number = item[col]['WssId'];
-      const terms = (item["TaxCatchAll"]).filter((x) => x.ID === wssid);
+      const wssid: number = item[col].WssId;
+      const terms = (item.TaxCatchAll).filter((x: { ID: number; Term: string }) => x.ID === wssid);
       if (!!terms && terms.length > 0) {
         return terms[0].Term;
       }
@@ -236,14 +249,14 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     return item[col];
   }
 
-  private getValues(data: Array<Object>, unique: Array<string>, config: ChartConfiguration): Array<Array<any>> {
-    const values: Object = {};
+  private getValues(data: ISPListItem[], unique: any[], config: ChartConfiguration): Array<Array<any>> {
+    const values: Record<string, any[]> = {};
     const vals: Array<Array<any>> = [[]];
     unique.forEach((col, i) => {
       values[col] = [];
       vals[i] = [];
       data.forEach((item, _i) => {
-        if (item[config.unique].hasOwnProperty('TermGuid') ? item[config.unique]["TermGuid"] == col["TermGuid"] : item[config.unique] == col) {
+        if (item[config.unique].hasOwnProperty('TermGuid') ? item[config.unique].TermGuid == col.TermGuid : item[config.unique] == col) {
           vals[i].push(item[config.col2]);
         }
       });
@@ -252,8 +265,8 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
   }
 
   protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any): void {
-    var pPath = propertyPath;
-    var pPathInd = propertyPath[12];
+    let pPath = propertyPath;
+    const pPathInd = parseInt(propertyPath[12], 10);
 
     if (pPath === 'numCharts' && oldValue != newValue) {
       if (this.properties.chartConfig.length < newValue) {
@@ -281,18 +294,18 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     }
     if ((pPath === 'url' && (newValue != oldValue)) || (pPath === 'dataurl' && (newValue != oldValue))) {
       this._updateListTitles(newValue, this.properties.chartConfig[pPathInd]);
-      this.properties.chartConfig[pPathInd]['other'] = true;
+      this.properties.chartConfig[pPathInd].other = true;
       this.properties.state = true;
     }
     if (pPath === 'list' && (newValue != oldValue)) {
-      var siteUrl = this.properties.chartConfig[pPathInd]['dataurl'];
+      const siteUrl = this.properties.chartConfig[pPathInd].dataurl;
       this._updateListColumns(siteUrl, newValue, this.properties.chartConfig[pPathInd]);
       this.properties.chartConfig[pPathInd].colsDisabled = false;
     }
     if (pPath === 'theme' && (newValue != oldValue)) {
       const newTheme = ChartOptions.RandomColors();
-      this.properties.chartConfig[pPathInd].bgColors = newTheme['bgColors'];
-      this.properties.chartConfig[pPathInd].hoverColors = newTheme['hoverColors'];
+      this.properties.chartConfig[pPathInd].bgColors = newTheme.bgColors;
+      this.properties.chartConfig[pPathInd].hoverColors = newTheme.hoverColors;
     }
     if (pPath === 'col1' && (newValue != oldValue)) {
       this.properties.chartConfig[pPathInd].hasTaxField = false;
@@ -315,26 +328,26 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
 
   protected onPropertyPaneConfigurationStart(): void {
 
-    if (this.properties.firstLoad || this.properties.chartConfig[0].columns.length <= 0 || this.properties.chartConfig[0].list.length <= 0) {
+    if (this.properties.firstLoad || this.properties.chartConfig[0].columns.length <= 0 || (this.properties.chartConfig[0].list || '').length <= 0) {
       this.context.statusRenderer.displayLoadingIndicator(this.domElement, 'First Time Configuration');
 
       this.properties.firstLoad = false;
-      this._getSiteRootWeb()
+      void this._getSiteRootWeb()
         .then((response0) => {
-          this._getSites(response0['Url'])
+          void this._getSites(response0.Url)
             .then((response) => {
-              var sites: IPropertyPaneDropdownOption[] = [];
+              const sites: IPropertyPaneDropdownOption[] = [];
               sites.push({ key: this.context.pageContext.web.absoluteUrl, text: 'This Site' });
               sites.push({ key: 'other', text: 'Other Site (Specify Url)' });
-              for (var _key in response.value) {
-                if (this.context.pageContext.web.absoluteUrl != response.value[_key]['Url']) {
-                  sites.push({ key: response.value[_key]['Url'], text: response.value[_key]['Title'] });
+              for (const item of response.value) {
+                if (this.context.pageContext.web.absoluteUrl != item.Url) {
+                  sites.push({ key: item.Url, text: item.Title });
                 }
               }
               this._siteOptions = sites;
               this.properties.siteOptions = sites;
 
-              this._getListTitles(this.properties.chartConfig[0].dataurl)
+              void this._getListTitles(this.properties.chartConfig[0].dataurl)
                 .then((response2) => {
                   this.properties.listOptions = response2.value.map((list: ISPList) => {
                     return {
@@ -343,11 +356,11 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
                     };
                   });
                   this.properties.chartConfig[0].lists = this.properties.listOptions;
-                  this._getListColumns(this.properties.chartConfig[0].list, this.properties.chartConfig[0].url)
+                  void this._getListColumns(this.properties.chartConfig[0].list, this.properties.chartConfig[0].url)
                     .then((response3) => {
-                      var col: IPropertyPaneDropdownOption[] = [];
-                      for (var __key in response3.value) {
-                        col.push({ key: response3.value[__key]['InternalName'], text: response3.value[__key]['Title'] });
+                      const col: IPropertyPaneDropdownOption[] = [];
+                      for (const item of response3.value) {
+                        col.push({ key: item.InternalName, text: item.Title });
                       }
                       this._columnOptions = col;
                       this.colsDisabled = false;
@@ -386,7 +399,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       }
     ];
 
-    for (var _i = 0; _i < this.properties.numCharts; _i++) {
+    for (let _i = 0; _i < this.properties.numCharts; _i++) {
       columnPropertyOptions.push(
         {
           groupName: "Chart " + (_i + 1) + " Configuration",
@@ -462,11 +475,11 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     };
   }
 
-  protected onPropertyPaneConfigurationComplete() {
+  protected onPropertyPaneConfigurationComplete(): void {
     this.render();
   }
 
-  private _getSiteRootWeb(): Promise<string[]> {
+  private _getSiteRootWeb(): Promise<ISPSite> {
 
     return this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + `/_api/Site/RootWeb?$select=Title,Url`, SPHttpClient.configurations.v1)
       .then((response: SPHttpClientResponse) => {
@@ -474,7 +487,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       });
   }
 
-  private _getSites(rootWebUrl: string): Promise<ISPLists> {
+  private _getSites(rootWebUrl: string): Promise<ISPSites> {
     return this.context.spHttpClient.get(rootWebUrl + `/_api/web/webs?$select=Title,Url`, SPHttpClient.configurations.v1)
       .then((response: SPHttpClientResponse) => {
         return response.json();
@@ -488,19 +501,19 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       });
   }
 
-  private _getListColumns(listName: string, listsite: string): Promise<any> {
+  private _getListColumns(listName: string | null, listsite: string): Promise<any> {
     return this.context.spHttpClient.get(listsite + `/_api/web/lists/GetByTitle('${listName}')/Fields?$filter=Hidden eq false and ReadOnlyField eq false and TypeAsString ne 'User' and TypeAsString ne 'Lookup'`, SPHttpClient.configurations.v1)
       .then((response: SPHttpClientResponse) => {
         return response.json();
       });
   }
 
-  public getData(chartConfig: Object) {
+  public getData(chartConfig: ChartConfiguration): Promise<ISPListItems> {
     const urlparttax = '&$select=*,TaxCatchAll/Term,TaxCatchAll/ID&$expand=TaxCatchAll';
-    const resturl = `/_api/web/lists/GetByTitle(\'${chartConfig['list']}\')/items?$orderby=Id desc&$limit=10&$top=${this.properties.maxResults}`;
-    let requesturl = chartConfig['dataurl'] + resturl;
+    const resturl = `/_api/web/lists/GetByTitle(\'${chartConfig.list}\')/items?$orderby=Id desc&$limit=10&$top=${this.properties.maxResults}`;
+    let requesturl = chartConfig.dataurl + resturl;
 
-    if (!!chartConfig['hasTaxField']) {
+    if (!!chartConfig.hasTaxField) {
       requesturl = requesturl + urlparttax;
     }
     return this.context.spHttpClient.get(requesturl, SPHttpClient.configurations.v1)
@@ -511,14 +524,14 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
 
   private _updateListTitles(siteUrl: string, _chartConfig: ChartConfiguration): void {
     this._getListTitles(siteUrl).then((response) => {
-      var respLists: IPropertyPaneDropdownOption[] = [];
-      for (var _key in response.value) {
-        respLists.push({ key: response.value[_key]['Title'], text: response.value[_key]['Title'] });
+      const respLists: IPropertyPaneDropdownOption[] = [];
+      for (const item of response.value) {
+        respLists.push({ key: item.Title, text: item.Title });
       }
       this._dropdownOptions = respLists;
       _chartConfig.lists = respLists;
       this.context.propertyPane.refresh();
-    }).catch((err) => {
+    }).catch(() => {
       this.context.statusRenderer.clearLoadingIndicator(this.domElement);
       this.context.statusRenderer.renderError(this.domElement, "There was an error loading your list, please verify the selected list has Calendar Events or choose a new list.");
     });
@@ -526,19 +539,19 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
 
   private _updateListColumns(siteUrl: string, listName: string, _chartConfig: ChartConfiguration): void {
     this._getListColumns(listName, siteUrl).then((response) => {
-      var respLists: IFieldProperty[] = [];
+      const respLists: IFieldProperty[] = [];
       console.log(response.value);
-      for (var _key in response.value) {
+      for (const item of response.value) {
         respLists.push({
-          key: response.value[_key]['InternalName'],
-          text: response.value[_key]['Title'],
-          fieldtype: response.value[_key]['TypeAsString']
+          key: item.InternalName,
+          text: item.Title,
+          fieldtype: item.TypeAsString
         });
       }
       this._columnOptions = respLists;
       _chartConfig.columns = respLists;
       this.context.propertyPane.refresh();
-    }).catch((err) => {
+    }).catch(() => {
       this.context.statusRenderer.clearLoadingIndicator(this.domElement);
       this.context.statusRenderer.renderError(this.domElement, "There was an error loading your list, please verify the selected list has Calendar Events or choose a new list.");
     });

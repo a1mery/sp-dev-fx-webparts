@@ -3,9 +3,38 @@
   "solution": {
     "name": "modern-charts-client-side-solution",
     "id": "f8a78a9a-a93e-4843-89e5-7b871d9b9fa2",
-    "version": "1.0.0.4",
+    "version": "1.0.0.5",
     "isDomainIsolated": false,
-    "includeClientSideAssets": true
+    "includeClientSideAssets": true,
+    "developer": {
+      "name": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "websiteUrl": "",
+      "mpnId": "Undefined-1.24.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "modern-charts description"
+      },
+      "longDescription": {
+        "default": "modern-charts description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "modern-charts ModernChartsWebPart Feature",
+        "description": "The feature that activates ModernChartsWebPart from the modern-charts solution.",
+        "id": "50dbeca0-48ed-4459-800f-b75b13159b21",
+        "version": "1.0.0.5",
+        "componentIds": [
+          "50dbeca0-48ed-4459-800f-b75b13159b21"
+        ]
+      }
+    ]
   },
   "paths": {
     "zippedPackage": "solution/modern-charts.sppkg"

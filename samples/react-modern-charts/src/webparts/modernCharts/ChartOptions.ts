@@ -4,15 +4,15 @@ export interface Theme {
     hoverColors: Array<string>;
 }
 
-import * as cs from 'color-scheme/lib/color-scheme';
-import { MChart } from './IModernChartsWebPartProps';
+import ColorScheme from 'color-scheme/lib/color-scheme';
+import { MChart, IChartColors, IChartData, IChartOptions } from './IModernChartsWebPartProps';
 
 export default class ChartOptions {
 
     public static _sampleData: Array<number> = [100, 50, 275, 100];
     public static _sampleCols: Array<string> = ['UPS','FedEx','USPS','OnTrac'];
 
-    public static Options(): Object{
+    public static Options(): IChartOptions {
         return {
             legend: {
                 display: true,
@@ -34,7 +34,7 @@ export default class ChartOptions {
         };
     }
 
-    public static Data(chart: MChart) {
+    public static Data(chart: MChart): IChartData {
             return  {
             labels: chart.labels,
             datasets: [{
@@ -45,11 +45,11 @@ export default class ChartOptions {
         };
     }
 
-    public static RandomColors(): Object {
-        var colors = {bgColors: [], hoverColors: []};
-        var colorTheme = new cs;
-        var colorHue = Math.floor(Math.random() * 360);
-        var colorPalette = colorTheme.from_hue(colorHue).scheme('analogic').variation('default');
+    public static RandomColors(): IChartColors {
+        const colors: IChartColors = {bgColors: [], hoverColors: []};
+        const colorTheme = new ColorScheme();
+        const colorHue = Math.floor(Math.random() * 360);
+        const colorPalette = colorTheme.from_hue(colorHue).scheme('analogic').variation('default');
         colors.bgColors = this.shuffleArray(colorPalette.add_complement(true).colors());
         colors.hoverColors = this.shuffleArray((colorPalette.add_complement(true).colors()).splice(6,6));
         colors.bgColors.forEach((hex,i)=> { colors.bgColors[i] = '#' + hex; });
@@ -57,8 +57,8 @@ export default class ChartOptions {
 
         return colors;
     }
-    public static SampleData() {
-        var theme = this.RandomColors();
+    public static SampleData(): IChartData {
+        const theme = this.RandomColors();
         return  {
             labels: [
                 'Red',
@@ -68,14 +68,14 @@ export default class ChartOptions {
             ],
             datasets: [{
             data: [100, 50, 275, 100],
-            backgroundColor: theme['bgColors'],
-            hoverBackgroundColor: theme['hoverColors']
+            backgroundColor: theme.bgColors,
+            hoverBackgroundColor: theme.hoverColors
             }]
         };
     }
 
-    public static shuffleArray(array){
-        var currentIndex = array.length, temporaryValue, randomIndex ;
+    public static shuffleArray<T>(array: T[]): T[] {
+        let currentIndex = array.length, temporaryValue: T, randomIndex: number;
         while (0 !== currentIndex) {
             randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex -= 1;

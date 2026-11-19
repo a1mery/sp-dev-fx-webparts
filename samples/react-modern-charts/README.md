@@ -50,14 +50,29 @@ Current Data Functions:
 | Every SPFx version is only compatible with specific version(s) of Node.js. In order to be able to build this sample, please ensure that the version of Node on your workstation matches one of the versions listed in this section. This sample will not work on a different version of Node.|
 |Refer to <https://aka.ms/spfx-matrix> for more information on SPFx compatibility.   |
 
-![SPFx 1.10](https://img.shields.io/badge/SPFx-1.10.0-green.svg) 
-![Node.js LSTS 8 | LTS 10](https://img.shields.io/badge/Node.js-LTS%208%20%7C%20v10-green.svg) 
+![SPFx 1.24.1](https://img.shields.io/badge/SPFx-1.24.1-green.svg)
+![Node.js v22](https://img.shields.io/badge/Node.js-v22-green.svg)
 ![Compatible with SharePoint Online](https://img.shields.io/badge/SharePoint%20Online-Compatible-green.svg)
 ![Does not work with SharePoint 2019](https://img.shields.io/badge/SharePoint%20Server%202019-Incompatible-red.svg "SharePoint Server 2019 requires SPFx 1.4.1 or lower")
 ![Does not work with SharePoint 2016 (Feature Pack 2)](https://img.shields.io/badge/SharePoint%20Server%202016%20(Feature%20Pack%202)-Incompatible-red.svg "SharePoint Server 2016 Feature Pack 2 requires SPFx 1.1")
-![Local Workbench Compatible](https://img.shields.io/badge/Local%20Workbench-Compatible-green.svg)
+![Local Workbench Unsupported](https://img.shields.io/badge/Local%20Workbench-Unsupported-red.svg "Local workbench is no longer available as of SPFx 1.13 and above")
 ![Hosted Workbench Compatible](https://img.shields.io/badge/Hosted%20Workbench-Compatible-green.svg)
 ![Compatible with Remote Containers](https://img.shields.io/badge/Remote%20Containers-Compatible-green.svg)
+
+### Package versions
+
+|Package|Version|
+|-------|-------|
+|SharePoint Framework|1.24.1|
+|Node.js|>=22.14.0 <23 (also 24.x, 26.x per engines)|
+|TypeScript|~5.8.0|
+|React / React DOM|18.3.1|
+|@fluentui/react|8.106.4|
+|@rushstack/heft|1.3.2|
+|ESLint|9.37.0|
+|chart.js|^2.9.3 (2.9.4 installed)|
+|react-chartjs-2|^2.0.5 (2.11.2 installed, React 18 peer override via npm `overrides`)|
+|@types/chart.js|2.9.41|
 
 ## Applies to
 
@@ -69,11 +84,13 @@ Current Data Functions:
 * [Jeremy Coleman](https://github.com/jcoleman-pcprofessional) 
 * [Peter Paul Kirschner](https://github.com/petkir) 
 * [Abderahman Moujahid](https://github.com/Abderahman88)
+* [Aimery Thomas](https://github.com/a1mery)
 
 ## Version history
 
 Version|Date|Comments
 -------|----|--------
+1.0.0.5|November 17, 2026|Upgrade to SPFx 1.24.1
 1.0.0.4|October 19, 2021| Fix values of managed metadata fields
 1.0.0.3|July 30, 2020| Support for Managed Metadata Field(Single) as Label
 1.0.0.2|February 09, 2020| Upgrade to SPFx 1.10.0
@@ -88,8 +105,9 @@ Version|Date|Comments
 
 - clone this repo
 - `npm i`
-- `gulp serve`
-- if deploying to Office 365, update the CDN path in write-manifests.json
+- `npm run start` (heft start)
+- update the `initialPage` in `config/serve.json` with your tenant URL
+- `npm run build` to produce `sharepoint/solution/modern-charts.sppkg`
 
 >  This sample can also be opened with [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview). Visit https://aka.ms/spfx-devcontainer for further instructions.
 
@@ -98,7 +116,7 @@ Version|Date|Comments
 Sample Web Parts in this solution illustrate the following concepts on top of the SharePoint Framework:
 
 - using React for building SharePoint Framework Client-Side Web Parts
-- using Office UI Fabric React components for building user experience consistent with SharePoint and Office
+- using Fluent UI React components for building user experience consistent with SharePoint and Office
 - communicating with SharePoint using its REST API
 - passing Web Part properties to React components
 - building dynamic web part properties
@@ -113,11 +131,11 @@ You can try looking at [issues related to this sample](https://github.com/pnp/sp
 
 You can also try looking at [discussions related to this sample](https://github.com/pnp/sp-dev-fx-webparts/discussions?discussions_q=react-modern-charts) and see what the community is saying.
 
-If you encounter any issues while using this sample, [create a new issue](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Abug-suspected%2Csample%3A%20react-modern-charts&template=bug-report.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88&title=react-modern-charts%20-%20).
+If you encounter any issues while using this sample, [create a new issue](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Abug-suspected%2Csample%3A%20react-modern-charts&template=bug-report.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88%20@a1mery&title=react-modern-charts%20-%20).
 
-For questions regarding this sample, [create a new question](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Aquestion%2Csample%3A%20react-modern-charts&template=question.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88&title=react-modern-charts%20-%20).
+For questions regarding this sample, [create a new question](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Aquestion%2Csample%3A%20react-modern-charts&template=question.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88%20@a1mery&title=react-modern-charts%20-%20).
 
-Finally, if you have an idea for improvement, [make a suggestion](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Aenhancement%2Csample%3A%20react-modern-charts&template=question.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88&title=react-modern-charts%20-%20).
+Finally, if you have an idea for improvement, [make a suggestion](https://github.com/pnp/sp-dev-fx-webparts/issues/new?assignees=&labels=Needs%3A+Triage+%3Amag%3A%2Ctype%3Aenhancement%2Csample%3A%20react-modern-charts&template=question.yml&sample=react-modern-charts&authors=@jcoleman-pcprofessional%20@petkir%20@Abderahman88%20@a1mery&title=react-modern-charts%20-%20).
 
 ## Disclaimer
 
