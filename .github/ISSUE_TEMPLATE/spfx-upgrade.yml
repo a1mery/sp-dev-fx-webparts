@@ -1,0 +1,74 @@
+# Issue form for SPFx sample upgrades.
+# The console app generates the SAME body format, so issues created by hand or by the app
+# are identical. The app matches issues to samples by parsing the "### Sample folder" section.
+# Note: `markdown` blocks are NOT included in the submitted issue body, so the agent
+# instructions live in a pre-filled textarea instead.
+
+name: SPFx sample upgrade
+description: Upgrade one web part sample to a target SPFx version (to be assigned to Copilot).
+title: "[Upgrade] <sample-folder> → SPFx <target-version>"
+labels: ["spfx-upgrade"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue = one sample. After creating the issue, assign it to **Copilot**.
+        Comments added to this issue later are NOT seen by the agent: put everything it needs here.
+
+  - type: input
+    id: sample-folder
+    attributes:
+      label: Sample folder
+      description: Folder name under `samples/` (exact, case-sensitive).
+      placeholder: react-my-sample
+    validations:
+      required: true
+
+  - type: input
+    id: current-version
+    attributes:
+      label: Current SPFx version
+      description: Version of `@microsoft/sp-core-library` in the sample's package.json.
+      placeholder: 1.4.1
+    validations:
+      required: true
+
+  - type: input
+    id: target-version
+    attributes:
+      label: Target SPFx version
+      description: Exact version, never "latest".
+      placeholder: 1.x.y
+    validations:
+      required: true
+
+  - type: dropdown
+    id: uses-graph
+    attributes:
+      label: Uses Microsoft Graph
+      options:
+        - "No"
+        - "Yes (delegated)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: instructions
+    attributes:
+      label: Instructions for Copilot
+      value: |
+        Upgrade the sample in `samples/<Sample folder>` to the target SPFx version above.
+
+        - Follow the `spfx-sample-upgrade` skill: scope rules, steps, definition of done and PR format.
+        - Like-for-like upgrade only: no PnPjs migration, no UI redesign, no refactoring.
+        - Only modify files inside `samples/<Sample folder>`.
+        - If you cannot reach done, keep the PR as draft and explain what is blocking.
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional, sample-specific hints (known issues, things to preserve).
