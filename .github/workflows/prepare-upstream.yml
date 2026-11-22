@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -84,8 +84,15 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only "$MERGE_BASE" pr/head)
           SAMPLES=$(echo "$CHANGED" | grep '^samples/' | cut -d/ -f2 | sort -u)
-          OUTSIDE=$(echo "$CHANGED" | grep -v '^samples/' || true)
+          # .github/ differences are tooling drift between the PR branch and `automation`
+          # (e.g. a PR branch created before the tooling changed). They are never exported:
+          # the upstream branch is built from the mirror + the sample folder only.
+          TOOLING=$(echo "$CHANGED" | grep '^\.github/' || true)
+          OUTSIDE=$(echo "$CHANGED" | grep -v -e '^samples/' -e '^\.github/' || true)
 
+          if [ -n "$TOOLING" ]; then
+            echo "::warning::Ignoring .github/ differences (not exported): $(echo $TOOLING)"
+          fi
           if [ -n "$OUTSIDE" ]; then
             echo "::error::The PR changes files outside samples/: $OUTSIDE"
             exit 1
