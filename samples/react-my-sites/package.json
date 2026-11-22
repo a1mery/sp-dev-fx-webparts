@@ -10,8 +10,7 @@
     "clean": "heft clean",
     "preversion": "node ./tools/pre-version.js",
     "postversion": "npm run build",
-    "test": "./node_modules/.bin/jest --config ./config/jest.config.json",
-    "test:watch": "./node_modules/.bin/jest --config ./config/jest.config.json --watchAll",
+    "test": "heft test --clean",
     "start": "heft start --clean",
     "eject-webpack": "heft eject-webpack"
   },
@@ -49,18 +48,12 @@
     "@types/react-dom": "18.2.25",
     "@types/webpack-env": "1.15.2",
     "@typescript-eslint/parser": "8.46.2",
-    "@voitanos/jest-preset-spfx-react16": "^1.3.2",
     "css-loader": "7.1.2",
     "eslint": "9.37.0",
     "eslint-plugin-react-hooks": "5.2.0",
-    "jest": "^23.6.0",
     "jest-junit": "17.0.0",
     "lodash": "^4.17.15",
     "typescript": "~5.8.0"
-  },
-  "jest-junit": {
-    "output": "temp/test/junit/junit.xml",
-    "usePathForSuiteName": "true"
   },
   "resolutions": {
     "@types/react": "18.2.79"
