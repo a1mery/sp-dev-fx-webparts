@@ -1,0 +1,154 @@
+# Builds a clean branch for an upstream contribution from a tested agent PR.
+#
+# Trigger: add the `tested` label to an agent PR (or run manually with the PR number).
+# Result:  branch `upstream/<sample>` = upstream main + ONE commit containing exactly the
+#          final state of samples/<sample> from the PR. Nothing from .github/ or any other
+#          path. A PR comment gives the link to open the PR on pnp/sp-dev-fx-webparts.
+#
+# Prerequisites:
+#   - Fork `main` is an untouched mirror of upstream main ("Sync fork" before running).
+#   - Repository variables UPSTREAM_AUTHOR_NAME and UPSTREAM_AUTHOR_EMAIL
+#     (the identity the upstream commit is credited to).
+
+name: prepare-upstream
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Agent PR number"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-upstream-${{ github.event.pull_request.number || github.event.inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-upstream:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'tested'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      UPSTREAM_REPO: pnp/sp-dev-fx-webparts
+      UPSTREAM_BRANCH: main
+      MIRROR_BRANCH: main
+      PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr }}
+      AUTHOR_NAME: ${{ vars.UPSTREAM_AUTHOR_NAME }}
+      AUTHOR_EMAIL: ${{ vars.UPSTREAM_AUTHOR_EMAIL }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check prerequisites
+        run: |
+          if [ -z "$AUTHOR_NAME" ] || [ -z "$AUTHOR_EMAIL" ]; then
+            echo "::error::Set repository variables UPSTREAM_AUTHOR_NAME and UPSTREAM_AUTHOR_EMAIL"
+            exit 1
+          fi
+
+      - name: Fetch PR head, mirror and upstream
+        id: refs
+        run: |
+          PR_JSON=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
+          BASE_REF=$(echo "$PR_JSON" | jq -r .base.ref)
+          git fetch -q origin "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"
+          git fetch -q origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          git fetch -q origin "+refs/heads/$MIRROR_BRANCH:refs/remotes/origin/$MIRROR_BRANCH"
+          git fetch -q "https://github.com/$UPSTREAM_REPO.git" "$UPSTREAM_BRANCH"
+          UPSTREAM_SHA=$(git rev-parse FETCH_HEAD)
+          MIRROR_SHA=$(git rev-parse "origin/$MIRROR_BRANCH")
+          MERGE_BASE=$(git merge-base "origin/$BASE_REF" pr/head)
+
+          # Fork main must be an exact mirror of upstream (also avoids pushing upstream
+          # workflow-file commits with GITHUB_TOKEN, which GitHub refuses)
+          if [ "$UPSTREAM_SHA" != "$MIRROR_SHA" ]; then
+            echo "::error::Fork '$MIRROR_BRANCH' is not in sync with $UPSTREAM_REPO/$UPSTREAM_BRANCH. Click 'Sync fork' on '$MIRROR_BRANCH', then re-run this workflow."
+            exit 1
+          fi
+          echo "merge_base=$MERGE_BASE" >> "$GITHUB_OUTPUT"
+
+      - name: Identify the single sample
+        id: sample
+        env:
+          MERGE_BASE: ${{ steps.refs.outputs.merge_base }}
+        run: |
+          CHANGED=$(git diff --name-only "$MERGE_BASE" pr/head)
+          SAMPLES=$(echo "$CHANGED" | grep '^samples/' | cut -d/ -f2 | sort -u)
+          OUTSIDE=$(echo "$CHANGED" | grep -v '^samples/' || true)
+
+          if [ -n "$OUTSIDE" ]; then
+            echo "::error::The PR changes files outside samples/: $OUTSIDE"
+            exit 1
+          fi
+          if [ "$(echo "$SAMPLES" | grep -c .)" -ne 1 ]; then
+            echo "::error::The PR must change exactly one sample, found: $SAMPLES"
+            exit 1
+          fi
+          echo "name=$SAMPLES" >> "$GITHUB_OUTPUT"
+
+      - name: Check upstream did not change the sample meanwhile
+        env:
+          MERGE_BASE: ${{ steps.refs.outputs.merge_base }}
+          SAMPLE: ${{ steps.sample.outputs.name }}
+        run: |
+          if ! git diff --quiet "$MERGE_BASE" "origin/$MIRROR_BRANCH" -- "samples/$SAMPLE"; then
+            echo "::error::samples/$SAMPLE changed upstream since the upgrade started. Re-run the upgrade on the current version of the sample."
+            exit 1
+          fi
+
+      - name: Build the upstream branch
+        id: build
+        env:
+          SAMPLE: ${{ steps.sample.outputs.name }}
+        run: |
+          BRANCH="upstream/$SAMPLE"
+          git switch -q -c "$BRANCH" "origin/$MIRROR_BRANCH"
+
+          # Replace the folder with its exact final state from the PR
+          # (this also carries deletions, e.g. gulpfile.js after the Heft migration)
+          git rm -r -q --ignore-unmatch "samples/$SAMPLE"
+          git checkout pr/head -- "samples/$SAMPLE"
+          git add -A "samples/$SAMPLE"
+
+          # Safety net: only this sample, no forbidden files
+          CHANGED=$(git diff --cached --name-only "origin/$MIRROR_BRANCH")
+          if echo "$CHANGED" | grep -v "^samples/$SAMPLE/"; then
+            echo "::error::Unexpected files outside samples/$SAMPLE"
+            exit 1
+          fi
+          if echo "$CHANGED" | grep -E '(upgrade-report\.md$|\.sppkg$|/(lib|temp|dist|release|node_modules)/)'; then
+            echo "::error::Forbidden files in the sample"
+            exit 1
+          fi
+
+          VERSION=$(node -e "const p=require('./samples/$SAMPLE/package.json');const d={...p.dependencies,...p.devDependencies};console.log((d['@microsoft/sp-core-library']||'').replace(/[^\d.]/g,''))")
+          git -c user.name="$AUTHOR_NAME" -c user.email="$AUTHOR_EMAIL" \
+            commit -q -m "$SAMPLE: upgrade to SPFx $VERSION"
+          git push -q --force origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Comment with the upstream PR link
+        env:
+          BRANCH: ${{ steps.build.outputs.branch }}
+          VERSION: ${{ steps.build.outputs.version }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          URL="https://github.com/$UPSTREAM_REPO/compare/$UPSTREAM_BRANCH...$OWNER:$REPO:$BRANCH?expand=1"
+          BODY=$(printf '%s\n\n%s\n\n%s' \
+            "✅ Upstream branch \`$BRANCH\` is ready: one commit on top of \`$UPSTREAM_REPO@$UPSTREAM_BRANCH\`, containing only this sample (SPFx $VERSION)." \
+            "**Open the upstream PR:** $URL" \
+            "Fill in the PnP PR template before submitting.")
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -f body="$BODY" > /dev/null

@@ -6,7 +6,9 @@ name: build-sample
 
 on:
   pull_request:
-    branches: [main]
+    # Agent PRs target the `automation` branch (fork default branch),
+    # never `main`, which stays a clean mirror of upstream.
+    branches: [automation]
     paths:
       - "samples/**"
   workflow_dispatch:
