@@ -56,7 +56,7 @@ export interface ChartConfiguration {
   type: string;
   url: string;
   dataurl: string;
-  list: string | null;
+  list: string | undefined;
   col1: string;
   col2: string;
   act: string;

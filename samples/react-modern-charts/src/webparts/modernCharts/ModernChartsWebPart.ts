@@ -6,6 +6,7 @@ import {
   IPropertyPaneConfiguration,
   PropertyPaneButton,
   IPropertyPaneDropdownOption,
+  IPropertyPaneGroup,
   PropertyPaneDropdown,
   PropertyPaneSlider,
   PropertyPaneTextField
@@ -45,6 +46,47 @@ export type ISPListItem = Record<string, any>;
 
 export interface ISPListItems {
   value: ISPListItem[];
+}
+
+export interface ISPField {
+  InternalName: string;
+  Title: string;
+  TypeAsString: string;
+}
+
+export interface ISPFields {
+  value: ISPField[];
+}
+
+/** Shape of a SharePoint managed metadata (taxonomy) field value. */
+interface ITaxonomyFieldValue {
+  TermGuid: string;
+}
+
+/** Returns true when a value is null or undefined (equivalent of `value == null`). */
+function isNullOrUndefined(value: unknown): boolean {
+  return value === null || value === undefined;
+}
+
+/** Equivalent of the loose `oldValue != newValue` check for property pane values (null and undefined are treated as equal). */
+function valuesDiffer(a: unknown, b: unknown): boolean {
+  return !(a === b || (isNullOrUndefined(a) && isNullOrUndefined(b)));
+}
+
+/** Mirrors the loose-equality semantics of `value == ""` for JSON-deserialized SharePoint values. */
+function isLooselyEmpty(value: unknown): boolean {
+  switch (typeof value) {
+    case 'string':
+      return value === '';
+    case 'number':
+      return value === 0;
+    case 'boolean':
+      return value === false;
+    case 'object':
+      return value !== null && String(value) === '';
+    default:
+      return false;
+  }
 }
 
 export type { IFieldProperty } from './IModernChartsWebPartProps';
@@ -104,7 +146,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       title: 'Chart Title',
       description: chartDesc,
       type: 'doughnut',
-      list: null,
+      list: undefined,
       dataurl: this.context.pageContext.web.absoluteUrl,
       url: this.context.pageContext.web.absoluteUrl,
       other: true,
@@ -134,7 +176,6 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       this.properties.firstLoad = true;
       this.properties.numCharts = 1;
       this.properties.chartConfig = [];
-      const firstChartConfig = this.defaultChartConfig;
       this.properties.chartConfig.push(this.defaultChartConfig('Demo Chart, Edit Web Part to Customize'));
     }
     this.getChartData();
@@ -152,17 +193,19 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     const _chartData: Array<MChart> = [];
     let _count = 0;
     this.properties.chartConfig.forEach((cfg, i) => {
-      if (cfg.list != null) {
-        void this.getData(cfg).then((response) => {
+      if (!isNullOrUndefined(cfg.list)) {
+        this.getData(cfg).then((response) => {
           const chart = this.calculateData(response.value, cfg);
           const _chart: MChart = { data: chart.data, labels: chart.labels, config: cfg, key: i };
           _chartData[i] = _chart;
-          if (++_count == this.properties.chartConfig.length) { this.getCharts(_chartData); }
+          if (++_count === this.properties.chartConfig.length) { this.getCharts(_chartData); }
+        }).catch((error: Error) => {
+          this.context.statusRenderer.renderError(this.domElement, error);
         });
       } else {
         const _chart: MChart = { data: ChartOptions._sampleData, labels: ChartOptions._sampleCols, config: cfg, key: i };
         _chartData[i] = _chart;
-        if (++_count == this.properties.chartConfig.length) { this.getCharts(_chartData); }
+        if (++_count === this.properties.chartConfig.length) { this.getCharts(_chartData); }
       }
     });
   }
@@ -184,14 +227,14 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
   private calculateData(data: ISPListItem[], config: ChartConfiguration): ICalculatedChartData {
     let values: Array<number> = [];
     const labels = this.getUnique(data, config);
-    const dataVal: Array<Array<any>> = this.getValues(data, labels.unique, config);
+    const dataVal: Array<Array<unknown>> = this.getValues(data, labels.unique, config);
 
     switch (config.act) {
       case 'sum':
         dataVal.forEach((vals, i) => {
           values[i] = 0;
           vals.forEach((val) => {
-            values[i] += parseFloat(val);
+            values[i] += parseFloat(String(val));
           });
         });
         break;
@@ -199,9 +242,9 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
         dataVal.forEach((vals, i) => {
           values[i] = 0;
           vals.forEach((val) => {
-            values[i] += parseFloat(val);
+            values[i] += parseFloat(String(val));
           });
-          if (values[i] != 0) {
+          if (values[i] !== 0) {
             values[i] = values[i] / vals.length;
           }
         });
@@ -218,13 +261,16 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     return { data: values, labels: labels.labels };
   }
 
-  private getUnique(data: ISPListItem[], config: ChartConfiguration): { unique: any[]; labels: string[] } {
-    const chLabels: { unique: any[]; labels: string[] } = { unique: [], labels: [] };
+  private getUnique(data: ISPListItem[], config: ChartConfiguration): { unique: unknown[]; labels: string[] } {
+    const chLabels: { unique: unknown[]; labels: string[] } = { unique: [], labels: [] };
     data.forEach((item) => {
       const uniqueItem = item[config.unique];
       const isTaxonomyField = item[config.unique].hasOwnProperty('TermGuid');
+      const isNewValue = isTaxonomyField
+        ? !chLabels.unique.some(field => (field as ITaxonomyFieldValue).TermGuid === uniqueItem.TermGuid)
+        : chLabels.unique.indexOf(uniqueItem) === -1;
 
-      if ((isTaxonomyField ? !chLabels.unique.some(field => field.TermGuid === uniqueItem.TermGuid) : chLabels.unique.indexOf(uniqueItem) == -1) && uniqueItem != null && uniqueItem != "") {
+      if (isNewValue && !isNullOrUndefined(uniqueItem) && !isLooselyEmpty(uniqueItem)) {
         chLabels.unique.push(uniqueItem);
         //if term use VAlue
         chLabels.labels.push(this.getLabel(item, config.col1));
@@ -233,7 +279,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     return chLabels;
   }
 
-  private getLabel(item: ISPListItem, col: string): any {
+  private getLabel(item: ISPListItem, col: string): string {
     if (!!item[col] && !!item[col].WssId && !!item.TaxCatchAll && item.TaxCatchAll.length > 0) {
       //Filter because you can have more Fields from this type to select the right value
       const wssid: number = item[col].WssId;
@@ -249,14 +295,14 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     return item[col];
   }
 
-  private getValues(data: ISPListItem[], unique: any[], config: ChartConfiguration): Array<Array<any>> {
-    const values: Record<string, any[]> = {};
-    const vals: Array<Array<any>> = [[]];
+  private getValues(data: ISPListItem[], unique: unknown[], config: ChartConfiguration): Array<Array<unknown>> {
+    const values: Record<string, unknown[]> = {};
+    const vals: Array<Array<unknown>> = [[]];
     unique.forEach((col, i) => {
-      values[col] = [];
+      values[String(col)] = [];
       vals[i] = [];
       data.forEach((item, _i) => {
-        if (item[config.unique].hasOwnProperty('TermGuid') ? item[config.unique].TermGuid == col.TermGuid : item[config.unique] == col) {
+        if (item[config.unique].hasOwnProperty('TermGuid') ? item[config.unique].TermGuid === (col as ITaxonomyFieldValue).TermGuid : item[config.unique] === col) {
           vals[i].push(item[config.col2]);
         }
       });
@@ -264,50 +310,51 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
     return vals;
   }
 
-  protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any): void {
+  protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
     let pPath = propertyPath;
     const pPathInd = parseInt(propertyPath[12], 10);
 
-    if (pPath === 'numCharts' && oldValue != newValue) {
-      if (this.properties.chartConfig.length < newValue) {
-        while (this.properties.chartConfig.length < newValue) {
+    if (pPath === 'numCharts' && valuesDiffer(oldValue, newValue)) {
+      const newCount = Number(newValue);
+      if (this.properties.chartConfig.length < newCount) {
+        while (this.properties.chartConfig.length < newCount) {
           this.properties.chartConfig.push(this.defaultChartConfig('Chart Description'));
         }
-      } else if (this.properties.chartConfig.length > newValue) {
-        while (newValue < this.properties.chartConfig.length) {
+      } else if (this.properties.chartConfig.length > newCount) {
+        while (newCount < this.properties.chartConfig.length) {
           this.properties.chartConfig.pop();
         }
       }
     }
 
-    if (propertyPath.indexOf('[') != -1) {
+    if (propertyPath.indexOf('[') !== -1) {
       pPath = propertyPath.substring(16).replace('\"]', '');
     }
-    if (pPath === 'url' && newValue == 'other' && (oldValue != newValue)) {
+    if (pPath === 'url' && newValue === 'other' && valuesDiffer(oldValue, newValue)) {
       this.urlTextDisabled = false;
       this.properties.chartConfig[pPathInd].dataUrlDisabled = false;
-      this.properties.chartConfig[pPathInd].dataurl = oldValue;
+      this.properties.chartConfig[pPathInd].dataurl = oldValue as string;
     }
-    if (pPath === 'url' && newValue != 'other' && (oldValue != newValue)) {
-      this.properties.chartConfig[pPathInd].dataurl = newValue;
+    if (pPath === 'url' && newValue !== 'other' && valuesDiffer(oldValue, newValue)) {
+      this.properties.chartConfig[pPathInd].dataurl = newValue as string;
       this.properties.chartConfig[pPathInd].dataUrlDisabled = true;
     }
-    if ((pPath === 'url' && (newValue != oldValue)) || (pPath === 'dataurl' && (newValue != oldValue))) {
-      this._updateListTitles(newValue, this.properties.chartConfig[pPathInd]);
+    if ((pPath === 'url' && valuesDiffer(newValue, oldValue)) || (pPath === 'dataurl' && valuesDiffer(newValue, oldValue))) {
+      this._updateListTitles(newValue as string, this.properties.chartConfig[pPathInd]);
       this.properties.chartConfig[pPathInd].other = true;
       this.properties.state = true;
     }
-    if (pPath === 'list' && (newValue != oldValue)) {
+    if (pPath === 'list' && valuesDiffer(newValue, oldValue)) {
       const siteUrl = this.properties.chartConfig[pPathInd].dataurl;
-      this._updateListColumns(siteUrl, newValue, this.properties.chartConfig[pPathInd]);
+      this._updateListColumns(siteUrl, newValue as string, this.properties.chartConfig[pPathInd]);
       this.properties.chartConfig[pPathInd].colsDisabled = false;
     }
-    if (pPath === 'theme' && (newValue != oldValue)) {
+    if (pPath === 'theme' && valuesDiffer(newValue, oldValue)) {
       const newTheme = ChartOptions.RandomColors();
       this.properties.chartConfig[pPathInd].bgColors = newTheme.bgColors;
       this.properties.chartConfig[pPathInd].hoverColors = newTheme.hoverColors;
     }
-    if (pPath === 'col1' && (newValue != oldValue)) {
+    if (pPath === 'col1' && valuesDiffer(newValue, oldValue)) {
       this.properties.chartConfig[pPathInd].hasTaxField = false;
       if (!!newValue
         && !!this.properties.chartConfig[pPathInd].columns
@@ -332,53 +379,53 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       this.context.statusRenderer.displayLoadingIndicator(this.domElement, 'First Time Configuration');
 
       this.properties.firstLoad = false;
-      void this._getSiteRootWeb()
-        .then((response0) => {
-          void this._getSites(response0.Url)
-            .then((response) => {
-              const sites: IPropertyPaneDropdownOption[] = [];
-              sites.push({ key: this.context.pageContext.web.absoluteUrl, text: 'This Site' });
-              sites.push({ key: 'other', text: 'Other Site (Specify Url)' });
-              for (const item of response.value) {
-                if (this.context.pageContext.web.absoluteUrl != item.Url) {
-                  sites.push({ key: item.Url, text: item.Title });
-                }
-              }
-              this._siteOptions = sites;
-              this.properties.siteOptions = sites;
+      this._getSiteRootWeb()
+        .then((response0) => this._getSites(response0.Url))
+        .then((response) => {
+          const sites: IPropertyPaneDropdownOption[] = [];
+          sites.push({ key: this.context.pageContext.web.absoluteUrl, text: 'This Site' });
+          sites.push({ key: 'other', text: 'Other Site (Specify Url)' });
+          for (const item of response.value) {
+            if (this.context.pageContext.web.absoluteUrl !== item.Url) {
+              sites.push({ key: item.Url, text: item.Title });
+            }
+          }
+          this._siteOptions = sites;
+          this.properties.siteOptions = sites;
 
-              void this._getListTitles(this.properties.chartConfig[0].dataurl)
-                .then((response2) => {
-                  this.properties.listOptions = response2.value.map((list: ISPList) => {
-                    return {
-                      key: list.Title,
-                      text: list.Title
-                    };
-                  });
-                  this.properties.chartConfig[0].lists = this.properties.listOptions;
-                  void this._getListColumns(this.properties.chartConfig[0].list, this.properties.chartConfig[0].url)
-                    .then((response3) => {
-                      const col: IPropertyPaneDropdownOption[] = [];
-                      for (const item of response3.value) {
-                        col.push({ key: item.InternalName, text: item.Title });
-                      }
-                      this._columnOptions = col;
-                      this.colsDisabled = false;
-                      this.listDisabled = false;
-                      this.context.propertyPane.refresh();
-                      this.context.statusRenderer.clearLoadingIndicator(this.domElement);
-                      this.render();
-                    });
-                });
-            });
+          return this._getListTitles(this.properties.chartConfig[0].dataurl);
+        })
+        .then((response2) => {
+          this.properties.listOptions = response2.value.map((list: ISPList) => {
+            return {
+              key: list.Title,
+              text: list.Title
+            };
+          });
+          this.properties.chartConfig[0].lists = this.properties.listOptions;
+          return this._getListColumns(this.properties.chartConfig[0].list, this.properties.chartConfig[0].url);
+        })
+        .then((response3) => {
+          const col: IPropertyPaneDropdownOption[] = [];
+          for (const item of response3.value) {
+            col.push({ key: item.InternalName, text: item.Title });
+          }
+          this._columnOptions = col;
+          this.colsDisabled = false;
+          this.listDisabled = false;
+          this.context.propertyPane.refresh();
+          this.context.statusRenderer.clearLoadingIndicator(this.domElement);
+          this.render();
+        })
+        .catch((error: Error) => {
+          this.context.statusRenderer.clearLoadingIndicator(this.domElement);
+          this.context.statusRenderer.renderError(this.domElement, error);
         });
     }
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-    let columnPropertyOptions: any;
-
-    columnPropertyOptions = [
+    const columnPropertyOptions: IPropertyPaneGroup[] = [
       {
         groupName: 'General Options',
         groupFields: [
@@ -501,7 +548,7 @@ export default class ModernChartsWebPart extends BaseClientSideWebPart<IModernCh
       });
   }
 
-  private _getListColumns(listName: string | null, listsite: string): Promise<any> {
+  private _getListColumns(listName: string | undefined, listsite: string): Promise<ISPFields> {
     return this.context.spHttpClient.get(listsite + `/_api/web/lists/GetByTitle('${listName}')/Fields?$filter=Hidden eq false and ReadOnlyField eq false and TypeAsString ne 'User' and TypeAsString ne 'Lookup'`, SPHttpClient.configurations.v1)
       .then((response: SPHttpClientResponse) => {
         return response.json();
