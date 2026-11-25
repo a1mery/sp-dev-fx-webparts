@@ -15,8 +15,9 @@ It requests a list of Azure AD [groups](https://learn.microsoft.com/graph/api/gr
 | Every SPFx version is only compatible with specific version(s) of Node.js. In order to be able to build this sample, please ensure that the version of Node on your workstation matches one of the versions listed in this section. This sample will not work on a different version of Node.|
 |Refer to <https://aka.ms/spfx-matrix> for more information on SPFx compatibility.   |
 
-![SPFx 1.7.1](https://img.shields.io/badge/SPFx-1.7.1-green.svg) 
-![Node.js v8](https://img.shields.io/badge/Node.js-v8-green.svg) 
+![SPFx 1.24.2](https://img.shields.io/badge/SPFx-1.24.2-green.svg)
+![Node.js v22.23.5](https://img.shields.io/badge/Node.js-v22.23.5-green.svg)
+![Toolchain Heft](https://img.shields.io/badge/Toolchain-Heft-green.svg)
 ![Compatible with SharePoint Online](https://img.shields.io/badge/SharePoint%20Online-Compatible-green.svg)
 ![Compatible with SharePoint 2019](https://img.shields.io/badge/SharePoint%20Server%202019-Compatible-green.svg)
 ![Does not work with SharePoint 2016 (Feature Pack 2)](https://img.shields.io/badge/SharePoint%20Server%202016%20(Feature%20Pack%202)-Incompatible-red.svg "SharePoint Server 2016 Feature Pack 2 requires SPFx 1.1")
@@ -38,19 +39,19 @@ It requests a list of Azure AD [groups](https://learn.microsoft.com/graph/api/gr
 Version|Date|Comments
 -------|----|--------
 1.0|Jan 09, 2019|Initial release
+1.1|Nov 25, 2026|Upgraded to SPFx 1.24.2
 
 ## Minimal Path to Awesome
 - clone this repo
 - navigate to the folder with current sample
 - restore dependencies: `$ npm i`
-- bundle solution: `$ gulp bundle --ship`
-- package solution: `$ gulp package-solution --ship`
+- build and package solution: `$ npm run build`
 - locate solution at `./sharepoint/solution/pn-p-graph-web-part.sppkg` and upload it to your tenant app catalog
 - you will see a message saying that solution has pending permissions which need to be approved:  
 ![Pending permission requests](./assets/approve.png)
 - you should approve permission requests from your SharePoint Framework web part. There are [different options available](https://learn.microsoft.com/sharepoint/dev/spfx/use-aadhttpclient#manage-permission-requests) - new SharePoint Admin UI, PowerShell, [`$o365`](https://pnp.github.io/office365-cli/) cli. For the matter of this sample, the fastest way to do it is through new SharePoint Admin UI. Open Web API permission management page by navigating to the url `https://<org>-admin.sharepoint.com/_layouts/15/online/AdminHome.aspx#/webApiPermissionManagement` (changing `<org>` to your real organization name) or by going to the new Admin UI directly from old SharePoint Admin Center. Select Pending `Group.Read.All` request and approve it:
 ![Approve request from new Admin UI](./assets/approve-request.png)
-- run `$ gulp serve` and open hosted workbench, i.e. `https://<org>.sharepoint.com/sites/<your site>/_layouts/15/workbench.aspx`
+- run `$ npm run start` and open hosted workbench, i.e. `https://<org>.sharepoint.com/sites/<your site>/_layouts/15/workbench.aspx`
 - add `PnPGraph` web part to see it in action
 
 >  This sample can also be opened with [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview). Visit https://aka.ms/spfx-devcontainer for further instructions.

@@ -6,6 +6,35 @@
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
     "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "websiteUrl": "",
+      "mpnId": "Undefined-1.15.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "pn-p-graph-web-part description"
+      },
+      "longDescription": {
+        "default": "pn-p-graph-web-part description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "pn-p-graph-web-part PnPGraphWebPart Feature",
+        "description": "The feature that activates PnPGraphWebPart from the pn-p-graph-web-part solution.",
+        "id": "b8e03ec4-5e33-4da2-8281-7ea8747159e3",
+        "version": "1.0.0.0",
+        "componentIds": [
+          "b8e03ec4-5e33-4da2-8281-7ea8747159e3"
+        ]
+      }
+    ],
     "webApiPermissionRequests": [
       {
         "resource": "Microsoft Graph",
