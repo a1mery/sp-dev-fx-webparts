@@ -1,11 +1,13 @@
 import * as React from 'react';
-import * as ReactDom from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { Version } from '@microsoft/sp-core-library';
 import {
-  BaseClientSideWebPart,
+  BaseClientSideWebPart
+} from '@microsoft/sp-webpart-base';
+import {
   IPropertyPaneConfiguration,
   PropertyPaneTextField
-} from '@microsoft/sp-webpart-base';
+} from '@microsoft/sp-property-pane';
 
 import * as strings from 'PnPGraphWebPartStrings';
 import PnPGraph from './components/PnPGraph';
@@ -18,6 +20,7 @@ export interface IPnPGraphWebPartProps {
 }
 
 export default class PnPGraphWebPart extends BaseClientSideWebPart<IPnPGraphWebPartProps> {
+  private _root: ReturnType<typeof createRoot>;
 
   public onInit(): Promise<void> {
 
@@ -36,11 +39,17 @@ export default class PnPGraphWebPart extends BaseClientSideWebPart<IPnPGraphWebP
       }
     );
 
-    ReactDom.render(element, this.domElement);
+    if (!this._root) {
+      this._root = createRoot(this.domElement);
+    }
+
+    this._root.render(element);
   }
 
   protected onDispose(): void {
-    ReactDom.unmountComponentAtNode(this.domElement);
+    if (this._root) {
+      this._root.unmount();
+    }
   }
 
   protected get dataVersion(): Version {

@@ -2,7 +2,13 @@
   "@microsoft/generator-sharepoint": {
     "isCreatingSolution": true,
     "environment": "spo",
-    "version": "1.7.1",
+    "version": "1.24.2",
+    "useGulp": false,
+    "nodeVersion": "22.23.5",
+    "sdkVersions": {
+      "@microsoft/teams-js": "2.24.0",
+      "@microsoft/microsoft-graph-client": "3.0.2"
+    },
     "libraryName": "pn-p-graph-web-part",
     "libraryId": "243a3aaf-cb6c-43b5-b297-133c2310a406",
     "packageManager": "npm",

@@ -5,8 +5,7 @@ import {
   DetailsListLayoutMode,
   IColumn,
   IDetailsList
-} from 'office-ui-fabric-react/lib/DetailsList';
-import { createRef } from 'office-ui-fabric-react/lib/Utilities';
+} from '@fluentui/react/lib/DetailsList';
 import * as React from 'react';
 import { IPnPGraphProps } from './IPnPGraphProps';
 
@@ -42,7 +41,7 @@ const _columns: IColumn[] = [
 ];
 
 export default class PnPGraph extends React.Component<IPnPGraphProps, IState> {
-  private _detailsList = createRef<IDetailsList>();
+  private _detailsList = React.createRef<IDetailsList>();
   constructor(props: any) {
     super(props);
 
@@ -55,6 +54,8 @@ export default class PnPGraph extends React.Component<IPnPGraphProps, IState> {
       this.setState({
         groups
       });
+    }).catch(error => {
+      throw error;
     });
   }
 
