@@ -13,17 +13,17 @@
     "eject-webpack": "heft eject-webpack"
   },
   "dependencies": {
-    "@microsoft/microsoft-graph-types": "^1.5.0",
+    "@microsoft/microsoft-graph-types": "1.5.0",
     "@microsoft/sp-core-library": "1.24.2",
     "@microsoft/sp-lodash-subset": "1.24.2",
     "@microsoft/sp-office-ui-fabric-core": "1.24.2",
     "@microsoft/sp-property-pane": "1.24.2",
     "@microsoft/sp-webpart-base": "1.24.2",
-    "@pnp/common": "^1.2.7",
-    "@pnp/graph": "^1.2.7",
-    "@pnp/logging": "^1.2.7",
-    "@pnp/odata": "^1.2.7",
-    "@fluentui/react": "8.106.4",
+    "@pnp/common": "1.2.7",
+    "@pnp/graph": "1.2.7",
+    "@pnp/logging": "1.2.7",
+    "@pnp/odata": "1.2.7",
+    "@fluentui/react": "8.125.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "tslib": "2.3.1"

@@ -54,6 +54,8 @@ export default class PnPGraph extends React.Component<IPnPGraphProps, IState> {
       this.setState({
         groups
       });
+    }).catch(error => {
+      throw error;
     });
   }
 
